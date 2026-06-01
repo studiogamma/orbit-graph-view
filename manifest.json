@@ -1,0 +1,9 @@
+{
+	"id": "orbit-graph-view",
+	"name": "Orbit Graph",
+	"version": "1.0.0",
+	"minAppVersion": "1.0.0",
+	"description": "Visualize your notes as a recursive planetary system. Orbit child notes around their parents using frontmatter, tags, outlinks, or backlinks with smooth, premium physics.",
+	"author": "studiogamma",
+	"isDesktopOnly": false
+}

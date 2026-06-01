@@ -1,0 +1,289 @@
+/* ========================================================================
+   Orbit — Solar System Graph View
+   ======================================================================== */
+
+.orbit-graph-container {
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	position: relative;
+	background-color: #0a0a1a;
+}
+
+.orbit-graph-container canvas {
+	display: block;
+	width: 100%;
+	height: 100%;
+	cursor: grab;
+}
+
+.orbit-graph-container canvas:active {
+	cursor: grabbing;
+}
+
+/* Empty-state message when no nodes have gravity metadata */
+.orbit-graph-empty {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	color: rgba(255, 255, 255, 0.4);
+	font-size: 1rem;
+	text-align: center;
+	line-height: 1.6;
+	pointer-events: none;
+	user-select: none;
+}
+
+.orbit-graph-empty code {
+	color: rgba(255, 255, 255, 0.6);
+	background: rgba(255, 255, 255, 0.06);
+	padding: 0.15em 0.4em;
+	border-radius: 4px;
+	font-size: 0.9em;
+}
+
+/* ========================================================================
+   Floating Settings Panel
+   ======================================================================== */
+
+/* Settings Cog Button */
+.orbit-graph-settings-toggle {
+	position: absolute;
+	top: 15px;
+	right: 15px;
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	background-color: var(--background-secondary-alt);
+	border: 1px solid var(--border-color);
+	color: var(--text-normal);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+	transition: all 0.2s ease-in-out;
+	z-index: 10;
+	backdrop-filter: blur(10px);
+}
+
+.orbit-graph-settings-toggle:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+	transform: scale(1.05);
+}
+
+.orbit-graph-settings-toggle svg {
+	width: 18px;
+	height: 18px;
+}
+
+/* Floating Settings Panel */
+.orbit-graph-settings-panel {
+	position: absolute;
+	top: 15px;
+	right: 15px;
+	bottom: 15px;
+	width: 320px;
+	background-color: var(--background-primary-alt);
+	border: 1px solid var(--border-color);
+	border-radius: 8px;
+	box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	z-index: 15;
+	backdrop-filter: blur(15px);
+	transition: opacity 0.2s ease, transform 0.2s ease;
+	opacity: 1;
+	transform: translateX(0);
+}
+
+.orbit-graph-settings-panel.is-hidden {
+	opacity: 0;
+	transform: translateX(20px);
+	pointer-events: none;
+}
+
+/* Panel Header */
+.orbit-graph-settings-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 12px 16px;
+	border-bottom: 1px solid var(--border-color);
+	background-color: var(--background-secondary-alt);
+}
+
+.orbit-graph-settings-title {
+	font-weight: 600;
+	font-size: 1.05rem;
+	color: var(--text-normal);
+}
+
+.orbit-graph-settings-actions {
+	display: flex;
+	gap: 8px;
+}
+
+.orbit-graph-settings-action-btn {
+	background: none;
+	border: none;
+	padding: 4px;
+	color: var(--text-muted);
+	cursor: pointer;
+	border-radius: 4px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+.orbit-graph-settings-action-btn:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.orbit-graph-settings-action-btn svg {
+	width: 16px;
+	height: 16px;
+}
+
+/* Panel Content */
+.orbit-graph-settings-content {
+	flex: 1;
+	overflow-y: auto;
+	padding: 8px 0;
+}
+
+/* Collapsible Section */
+.orbit-settings-section {
+	border-bottom: 1px solid var(--border-color);
+}
+
+.orbit-settings-section:last-child {
+	border-bottom: none;
+}
+
+.orbit-settings-section-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 10px 16px;
+	font-weight: 500;
+	font-size: 0.9rem;
+	color: var(--text-normal);
+	background-color: var(--background-secondary);
+	cursor: pointer;
+	user-select: none;
+	transition: background-color 0.1s ease;
+}
+
+.orbit-settings-section-header:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.orbit-settings-section-header-icon {
+	transition: transform 0.2s ease;
+	display: flex;
+	align-items: center;
+}
+
+.orbit-settings-section-header-icon.is-collapsed {
+	transform: rotate(-90deg);
+}
+
+.orbit-settings-section-content {
+	padding: 12px 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.orbit-settings-section-content.is-collapsed {
+	display: none;
+}
+
+/* Setting Items */
+.orbit-setting-item {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.orbit-setting-item-header {
+	display: flex;
+	flex-direction: column;
+}
+
+.orbit-setting-item-name {
+	font-size: 0.85rem;
+	font-weight: 500;
+	color: var(--text-normal);
+}
+
+.orbit-setting-item-desc {
+	font-size: 0.75rem;
+	color: var(--text-muted);
+}
+
+.orbit-setting-item-control {
+	margin-top: 4px;
+}
+
+/* Styling native-looking elements */
+.orbit-setting-item-control select {
+	width: 100%;
+	padding: 6px 8px;
+	background-color: var(--background-secondary-alt);
+	border: 1px solid var(--border-color);
+	border-radius: 4px;
+	color: var(--text-normal);
+	font-size: 0.8rem;
+}
+
+.orbit-setting-item-control select:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+}
+
+.orbit-setting-slider-container {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.orbit-setting-slider-container input[type="range"] {
+	flex: 1;
+	accent-color: var(--interactive-accent);
+	cursor: pointer;
+}
+
+.orbit-setting-slider-value {
+	font-size: 0.8rem;
+	font-weight: 500;
+	color: var(--text-muted);
+	width: 32px;
+	text-align: right;
+}
+
+/* Checkbox settings */
+.orbit-setting-checkbox-container {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 4px 0;
+}
+
+.orbit-setting-checkbox-container input[type="checkbox"] {
+	margin-top: 4px;
+	cursor: pointer;
+	accent-color: var(--interactive-accent);
+}
+
+.orbit-setting-checkbox-label {
+	cursor: pointer;
+	user-select: none;
+}
+
