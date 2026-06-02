@@ -22,6 +22,9 @@ Orbit supports **four** distinct ways to model parent-child links in your vault,
 3. **Outlinks:** Automatically model links inside a note (`[[Parent Note]]`) as outbound parental paths.
 4. **Backlinks:** Model backlinks from other notes as inbound child pathways.
 
+* While a single node having multiple parent nodes is technically allowed, it is not recommended. 
+* If a parent-child relationship forms a cycle, arbitrary edges will be ignored in the orbit view
+
 ---
 
 ## 🎛️ Settings & Customizability
@@ -56,32 +59,12 @@ Orbit supports **four** distinct ways to model parent-child links in your vault,
 
 ---
 
-## 🛠️ Development
-
-If you want to build or contribute to Orbit locally:
-
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/studiogamma/orbit-graph-view.git
-   cd orbit-graph-view
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Build the plugin in production mode:
-   ```bash
-   npm run build
-   ```
-4. For active development with hot-reloading:
-   ```bash
-   npm run dev
-   ```
-
----
-
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE) - see the [LICENSE](LICENSE) file for details.
 
 *Crafted with by [studiogamma](https://github.com/studiogamma).*
+
+## ☕ Support
+
+If you find this plugin helpful, consider [supporting the developer](https://ko-fi.com/studiogamma).
