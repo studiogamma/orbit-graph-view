@@ -1,6 +1,6 @@
 # Orbit
 
-**Orbit** is an interactive Obsidian plugin that visualizes your vault as a dynamic, recursive planetary system. Unlike standard network graphs, Orbit models your notes as orbiting nodes based on parent-child relationships. This can transform your knowledge base into an elegant personal cosmos.
+**Orbit** is an interactive Obsidian plugin that visualizes your vault as a recursive and organized planetary system. Unlike standard graph view, Orbit can model your notes as orbiting nodes and transform your vault into a dynamic living cosmos.
 
 
 https://github.com/user-attachments/assets/e0af8fb8-a452-4c5b-987f-e62942bc2b92
