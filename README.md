@@ -11,9 +11,9 @@ https://github.com/user-attachments/assets/e0af8fb8-a452-4c5b-987f-e62942bc2b92
 ## ✨ Features
 
 * **Recursive Solar Systems:** Visualize hierarchical relationships in your notes. Child notes dynamically orbit around their parent notes, forming multi-layered planetary systems.
-* **Celestial Theme:** A theme featuring realistic Solar System colors that turns your workspace a living cosmos.
-* **Dark Theme & Light Theme:** Minimal black-and-white styles that blend seamlessly with your native Obsidian setup.
-* **Overlay Setting Panel:** A glassmorphic, collapsible settings panel floats directly over the orbit view.
+* **Celestial Theme:** A theme featuring realistic Solar System colors.
+* **Dark Theme & Light Theme:** Minimal black-and-white styles.
+* **Overlay Setting Panel:** A collapsible settings panel floats over the orbit view.
 
 ---
 
