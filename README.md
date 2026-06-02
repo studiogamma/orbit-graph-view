@@ -2,6 +2,10 @@
 
 **Orbit** is an interactive Obsidian plugin that visualizes your vault as a dynamic, recursive planetary system. Unlike standard network graphs, Orbit models your notes as orbiting nodes based on parent-child relationships. This can transform your knowledge base into an elegant personal cosmos.
 
+
+https://github.com/user-attachments/assets/e0af8fb8-a452-4c5b-987f-e62942bc2b92
+
+
 ---
 
 ## ✨ Features
@@ -27,7 +31,7 @@ Orbit supports **four** distinct ways to model parent-child links in your vault,
 
 ---
 
-## 🎛️ Settings & Customizability
+## ⚙️ Settings & Customizability
 
 * **Kepler Speed (BASE_OMEGA):** Control the velocity of your planets. Uses realistic distance-dependent orbital physics—notes closer to the center orbit faster, while outer planets glide gracefully at a slower speed.
 * **Sibling Sort Order:** Choose how sibling planets in the same orbit layer are sorted (File Size, Created Time, Modified Time, or Alphabetical).
