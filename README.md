@@ -1,18 +1,15 @@
 # Orbit
 
-**Orbit** is a premium, interactive Obsidian plugin that visualizes your vault as a dynamic, recursive planetary system. Unlike standard network graphs, Orbit models your notes as stars and orbiting planets based on parent-child relationships, transforming your knowledge base into an elegant personal cosmos.
+**Orbit** is an interactive Obsidian plugin that visualizes your vault as a dynamic, recursive planetary system. Unlike standard network graphs, Orbit models your notes as orbiting nodes based on parent-child relationships. This can transform your knowledge base into an elegant personal cosmos.
 
 ---
 
 ## ✨ Features
 
-* **Recursive Solar Systems:** Visualize hierarchical relationships in your notes. Child notes dynamically orbit around their parent notes, forming deep, multi-layered planetary systems.
-* **Vibrant Cosmic Themes:**
-  * **Celestial:** A premium default theme featuring realistic Solar System colors (Earth, Jupiter, Saturn, and Neptune palettes) that brings your workspace to life.
-  * **Dark & Light:** Sleek, minimalist black-and-white or high-contrast grey styles that blend seamlessly with your native Obsidian setup.
-* **Interactive Controls Overlay:** A glassmorphic, collapsible settings panel floats directly over the canvas, mirroring Obsidian's native UI look and feel.
-* **Real-time Live Parameter Updating:** Tweak speed, spacing, sizing, or toggle filters instantly. Modifications are computed in-place without resetting note coordinates or causing jarring camera jumps.
-* **Smart Camera Tracking:** Automatically ranks all systems by size, complexity, and file size to focus and scale perfectly on the most significant note constellation upon load.
+* **Recursive Solar Systems:** Visualize hierarchical relationships in your notes. Child notes dynamically orbit around their parent notes, forming multi-layered planetary systems.
+* **Celestial Theme:** A theme featuring realistic Solar System colors that turns your workspace a living cosmos.
+* **Dark Theme & Light Theme:** Minimal black-and-white styles that blend seamlessly with your native Obsidian setup.
+* **Overlay Setting Panel:** A glassmorphic, collapsible settings panel floats directly over the orbit view.
 
 ---
 
@@ -21,7 +18,7 @@
 Orbit supports **four** distinct ways to model parent-child links in your vault, customizable directly inside the settings panel:
 
 1. **Frontmatter Metadata:** Specify `gravity_parent: Parent Note` in your note's YAML frontmatter.
-2. **Tags:** Turn any tag (e.g., `#ideas`, `#projects`) into a central star! Notes sharing a tag will dynamically orbit around a beautifully rendered, glowing **Virtual Tag Node** (`#A259FF` Neon Purple).
+2. **Tags:** Turn any tag (e.g., `#ideas`, `#projects`) into a central star! Notes sharing a tag will dynamically orbit around a beautifully rendered. If no notes exist for a specific tag, virtual tag nodes will take its place.
 3. **Outlinks:** Automatically model links inside a note (`[[Parent Note]]`) as outbound parental paths.
 4. **Backlinks:** Model backlinks from other notes as inbound child pathways.
 
