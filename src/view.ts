@@ -415,7 +415,7 @@ export class OrbitGraphView extends ItemView {
 			this.createDropdownSetting(
 				secBody,
 				'Orbit Relation Source',
-				'Parent-child relation source',
+				'',
 				this.settings.parentSource,
 				[
 					{ value: 'frontmatter', label: 'Frontmatter' },
@@ -435,7 +435,7 @@ export class OrbitGraphView extends ItemView {
 			this.createDropdownSetting(
 				secBody,
 				'Sibling Sort Order',
-				'How to order sibling nodes',
+				'',
 				this.settings.siblingSortMode,
 				[
 					{ value: 'fileSize', label: 'File Size' },
@@ -454,15 +454,20 @@ export class OrbitGraphView extends ItemView {
 
 		// --- SECTION 2: Display ---
 		this.createCollapsibleSection(parent, 'Display', (secBody) => {
-			// Kepler Speed Slider
-			this.createSliderSetting(
+			// Kepler Speed
+			this.createDropdownSetting(
 				secBody,
 				'Kepler Speed',
-				'Higher is faster',
-				this.settings.keplerBaseOmega,
-				0, 15, 0.5,
+				'',
+				String(this.settings.keplerBaseOmega),
+				[
+					{ value: '0', label: 'Stationary' },
+					{ value: '2.5', label: 'Slow' },
+					{ value: '5', label: 'Moderate' },
+					{ value: '10', label: 'Fast' }
+				],
 				async (val) => {
-					this.settings.keplerBaseOmega = val;
+					this.settings.keplerBaseOmega = parseFloat(val);
 					// Dynamically update parameters in-place without resetting graph
 					this.physics.updatePhysicsParameters(this.settings);
 					if (this.saveSettingsCallback) await this.saveSettingsCallback(this.settings);
@@ -473,7 +478,7 @@ export class OrbitGraphView extends ItemView {
 			this.createDropdownSetting(
 				secBody,
 				'Orbit Theme',
-				'Visual color scheme',
+				'',
 				this.settings.theme,
 				[
 					{ value: 'celestial', label: 'Celestial' },
@@ -491,7 +496,7 @@ export class OrbitGraphView extends ItemView {
 			this.createDropdownSetting(
 				secBody,
 				'Orbit Direction',
-				'Rotation direction',
+				'',
 				this.settings.orbitDirection,
 				[
 					{ value: 'cross', label: 'Cross Path' },
@@ -510,7 +515,7 @@ export class OrbitGraphView extends ItemView {
 			this.createSliderSetting(
 				secBody,
 				'Orbit Radius Scale',
-				'Scale factor for orbit radius (0.5x - 2.0x)',
+				'',
 				this.settings.orbitRadiusScale,
 				0.5, 2.0, 0.1,
 				async (val) => {
@@ -525,7 +530,7 @@ export class OrbitGraphView extends ItemView {
 			this.createSliderSetting(
 				secBody,
 				'Node Size Scale',
-				'Scale factor for node size (0.5x - 2.0x)',
+				'',
 				this.settings.nodeSizeScale,
 				0.5, 2.0, 0.1,
 				async (val) => {
@@ -621,7 +626,9 @@ export class OrbitGraphView extends ItemView {
 
 		const header = item.createDiv({ cls: 'orbit-setting-item-header' });
 		header.createDiv({ cls: 'orbit-setting-item-name', text: name });
-		header.createDiv({ cls: 'orbit-setting-item-desc', text: desc });
+		if (desc) {
+			header.createDiv({ cls: 'orbit-setting-item-desc', text: desc });
+		}
 
 		const control = item.createDiv({ cls: 'orbit-setting-item-control' });
 		const select = control.createEl('select');
@@ -651,7 +658,9 @@ export class OrbitGraphView extends ItemView {
 
 		const header = item.createDiv({ cls: 'orbit-setting-item-header' });
 		header.createDiv({ cls: 'orbit-setting-item-name', text: name });
-		header.createDiv({ cls: 'orbit-setting-item-desc', text: desc });
+		if (desc) {
+			header.createDiv({ cls: 'orbit-setting-item-desc', text: desc });
+		}
 
 		const control = item.createDiv({ cls: 'orbit-setting-item-control' });
 		const container = control.createDiv({ cls: 'orbit-setting-slider-container' });

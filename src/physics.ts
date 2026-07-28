@@ -15,7 +15,7 @@ const BASE_OMEGA = 2;
 const ROOT_PADDING = 200;
 const NODE_RENDER_SCALE = 3;
 
-const BASE_NODE_SCALE = 60;
+const BASE_NODE_SCALE = 30;
 const BASE_ORBIT_SCALE = 240;
 
 // ---------------------------------------------------------------------------

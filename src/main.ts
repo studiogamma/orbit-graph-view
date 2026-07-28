@@ -107,7 +107,6 @@ class OrbitSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Sibling Sort Order')
-			.setDesc('How to order sibling nodes within the same orbit layer')
 			.addDropdown((dropdown) =>
 				dropdown
 					.addOption('fileSize', 'File Size')
@@ -123,7 +122,6 @@ class OrbitSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Orbit Relation Source')
-			.setDesc('Configure how parent-child relationships are identified in your vault')
 			.addDropdown((dropdown) =>
 				dropdown
 					.addOption('frontmatter', 'Frontmatter metadata (gravity_parent)')
@@ -139,7 +137,6 @@ class OrbitSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Hide Lone Stars')
-			.setDesc('Hide nodes that have no parents and no children (isolated nodes)')
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.hideLoneStars)
@@ -151,7 +148,6 @@ class OrbitSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Hide Orbit Trace')
-			.setDesc('Hide the orbit circular track lines')
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.hideOrbitTrace)
@@ -163,7 +159,6 @@ class OrbitSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Hide Line to Parent')
-			.setDesc('Hide the connection lines between parent and child nodes')
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.hideLink)
@@ -175,7 +170,6 @@ class OrbitSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Orbit Theme')
-			.setDesc('Choose the visual color theme of the Orbit View')
 			.addDropdown((dropdown) =>
 				dropdown
 					.addOption('celestial', 'Celestial Theme (Stars and Planets)')
@@ -190,7 +184,6 @@ class OrbitSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Orbit Direction')
-			.setDesc('Configure the rotation direction of the orbiting nodes')
 			.addDropdown((dropdown) =>
 				dropdown
 					.addOption('cross', 'Cross Path (Alternating by depth)')
@@ -204,22 +197,22 @@ class OrbitSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName('Kepler Speed (BASE_OMEGA)')
-			.setDesc('Speed parameter for Keplerian model (higher is faster)')
-			.addSlider((slider) =>
-				slider
-					.setLimits(0, 15, 0.5)
-					.setValue(this.plugin.settings.keplerBaseOmega)
-					.setDynamicTooltip()
+			.setName('Kepler Speed')
+			.addDropdown((dropdown) =>
+				dropdown
+					.addOption('0', 'Stationary')
+					.addOption('2.5', 'Slow')
+					.addOption('5', 'Moderate')
+					.addOption('10', 'Fast')
+					.setValue(String(this.plugin.settings.keplerBaseOmega))
 					.onChange(async (value) => {
-						this.plugin.settings.keplerBaseOmega = value;
+						this.plugin.settings.keplerBaseOmega = parseFloat(value);
 						await this.plugin.saveSettings();
 					})
 			);
 
 		new Setting(containerEl)
 			.setName('Orbit Radius Scale')
-			.setDesc('Scale factor for the orbit radius (0.5x - 2.0x)')
 			.addSlider((slider) =>
 				slider
 					.setLimits(0.5, 2.0, 0.1)
@@ -233,7 +226,6 @@ class OrbitSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Node Size Scale')
-			.setDesc('Scale factor for the node render size (0.5x - 2.0x)')
 			.addSlider((slider) =>
 				slider
 					.setLimits(0.5, 2.0, 0.1)

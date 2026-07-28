@@ -33,7 +33,7 @@ Orbit supports **four** distinct ways to model parent-child links in your vault,
 
 ## ⚙️ Settings & Customizability
 
-* **Kepler Speed (BASE_OMEGA):** Control the velocity of your planets. Uses realistic distance-dependent orbital physics—notes closer to the center orbit faster, while outer planets glide gracefully at a slower speed.
+* **Kepler Speed:** Control the velocity of your planets. Uses realistic distance-dependent orbital physics—notes closer to the center orbit faster, while outer planets glide gracefully at a slower speed.
 * **Sibling Sort Order:** Choose how sibling planets in the same orbit layer are sorted (File Size, Created Time, Modified Time, or Alphabetical).
 * **Concentric Orbit Paths:** Sibling nodes are intelligently distributed on separate, non-overlapping concentric rings (from $0.5\text{x}$ to $1.5\text{x}$ scale) to prevent visual overlapping.
 * **Custom Sizing Sliders:**
