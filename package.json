@@ -1,6 +1,6 @@
 {
 	"name": "orbit-graph-view",
-	"version": "1.0.0",
+	"version": "1.1.6",
 	"description": "Obsidian plugin — visualize notes as a recursive solar system",
 	"main": "main.js",
 	"type": "module",
