@@ -8,16 +8,15 @@ https://github.com/user-attachments/assets/e0af8fb8-a452-4c5b-987f-e62942bc2b92
 
 ---
 
-## ✨ Features
+## Features
 
-* **Recursive Solar Systems:** Visualize hierarchical relationships in your notes. Child notes dynamically orbit around their parent notes, forming multi-layered planetary systems.
-* **Celestial Theme:** A theme featuring realistic Solar System colors.
-* **Dark Theme & Light Theme:** Minimal black-and-white styles.
-* **Overlay Setting Panel:** A collapsible settings panel floats over the orbit view.
+* **An Organized Orbital Cosmos:** Visualize hierarchical relationships in your vault. Child notds orbit around their parent nodes, forming multi-layered recursive planetary systems.
+* **Customization:** Customize the orbit graph's theme, rotation speed, orbit radius, node size and more in the settings panel.
+* **Node Focus:** Right-click a node to focus on it. The camera will follow the focused node while dimming unrelated nodes.
 
 ---
 
-## 🪐 Multiple Relation Sources
+## Orbit Methods(Sources)
 
 Orbit supports **four** distinct ways to model parent-child links in your vault, customizable directly inside the settings panel:
 
@@ -26,49 +25,34 @@ Orbit supports **four** distinct ways to model parent-child links in your vault,
 3. **Outlinks:** Automatically model links inside a note (`[[Parent Note]]`) as outbound parental paths.
 4. **Backlinks:** Model backlinks from other notes as inbound child pathways.
 
-* While a single node having multiple parent nodes is technically allowed, it is not recommended. 
 * If a parent-child relationship forms a cycle, arbitrary edges will be ignored in the orbit view
 
 ---
 
-## ⚙️ Settings & Customizability
+## Settings & Customization
 
-* **Kepler Speed:** Control the velocity of your planets. Uses realistic distance-dependent orbital physics—notes closer to the center orbit faster, while outer planets glide gracefully at a slower speed.
-* **Sibling Sort Order:** Choose how sibling planets in the same orbit layer are sorted (File Size, Created Time, Modified Time, or Alphabetical).
-* **Concentric Orbit Paths:** Sibling nodes are intelligently distributed on separate, non-overlapping concentric rings (from $0.5\text{x}$ to $1.5\text{x}$ scale) to prevent visual overlapping.
-* **Custom Sizing Sliders:**
-  * **Orbit Radius Scale:** Scale the radius of all orbit paths ($0.5\text{x} - 2.0\text{x}$).
-  * **Node Size Scale:** Adjust the sizing of stars and planets ($0.5\text{x} - 2.0\text{x}$).
-* **Seamless Visual Toggles:**
-  * **Hide Lone Stars:** Toggle whether isolated nodes (with no parents or children) are filtered out, processed instantly in the draw loop without resets.
-  * **Hide Orbit Trace:** Hide or show the circular path trails.
-  * **Hide Line to Parent:** Hide or show the parent-child gravitational connection lines.
-
----
-
-## 🚀 Installation
-
-### Option 1: Via Community Plugins (Pending Store Approval)
-1. Open Obsidian **Settings** > **Community Plugins**.
-2. Turn on community plugins.
-3. Search for **Orbit** and click **Install**.
-4. Enable the plugin in your settings.
-
-### Option 2: Manual Installation
-1. Go to the [Releases](https://github.com/studiogamma/orbit-graph-view/releases) page of this repository.
-2. Download the three files from the latest release: `main.js`, `manifest.json`, and `styles.css`.
-3. Open your vault's plugin directory: `<your-vault>/.obsidian/plugins/` (create the `plugins` folder if it doesn't exist).
-4. Create a folder named `orbit` and paste the three files inside it.
-5. Restart Obsidian, go to **Community Plugins**, and turn on **Orbit**.
+* **Theme:** Select light(white-and-gray like obsidian graph view), dark(black-and-white) and celestial(realistic solar system colors).
+* **Sibling Sort Order:** Choose how same-level nodes are arranged (File Size, Created Time, Modified Time, or Alphabetical).
+* **Orbit Speed:** Control the velocity of nodes. Uses realistic orbital physics (nodes closer to the center orbit faster).
+* **Orbit Radius Scale:** Scale the radius of all orbit ($0.5\text{x} - 2.0\text{x}$).
+* **Node Size Scale:** Adjust the sizing of nodes ($0.5\text{x} - 2.0\text{x}$).
+* **Galactic Rotation**: Rotate top-level nodes around their centroid so the entire graph resembles one galaxy.
+* **Many Seamless Toggles**:
+ * Orbit traces
+ * parent-child lines
+ * lone nodes
+ * single-parent nodes
+ * multi-parent nodes
+ * oval/circle orbit for dual-parent nodes
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the [MIT License](LICENSE) - see the [LICENSE](LICENSE) file for details.
 
 *Crafted with by [studiogamma](https://github.com/studiogamma).*
 
-## ☕ Support
+## Support
 
 If you find this plugin helpful, consider [supporting the developer](https://ko-fi.com/studiogamma).
