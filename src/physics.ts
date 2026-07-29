@@ -28,6 +28,9 @@ export class PhysicsEngine {
 	private settings: OrbitPluginSettings = DEFAULT_SETTINGS;
 	private maxDepth: number = 0;
 	private systemMaxDepths: Map<string, number> = new Map();
+	private orderedNonRootNodeIds: string[] = [];
+	private baseRootPositions: Map<string, { x: number; y: number }> = new Map();
+	private rootAngles: Map<string, number> = new Map();
 
 	/**
 	 * Initialize the engine with a parsed graph.
@@ -38,6 +41,8 @@ export class PhysicsEngine {
 		this.settings = settings;
 		this.states.clear();
 		this.systemMaxDepths.clear();
+		this.orderedNonRootNodeIds = [];
+		this.rootAngles.clear();
 
 		if (graph.roots.length === 0) return;
 
@@ -88,23 +93,37 @@ export class PhysicsEngine {
 
 		// -- Initialize orbital states for all non-root nodes (BFS order) -----
 		this.initializeOrbits(graph);
+
+		// Build ordered list of non-root nodes by depth ascending
+		this.orderedNonRootNodeIds = Array.from(graph.nodes.values())
+			.filter((node) => node.parents.length > 0)
+			.sort((a, b) => a.depth - b.depth)
+			.map((node) => node.id);
+
+		// Initial position calculation for all non-root nodes
+		for (const nodeId of this.orderedNonRootNodeIds) {
+			this.updateNodePosition(nodeId);
+		}
 	}
 
 	/**
 	 * Advance the simulation by `dt` seconds.
-	 * Updates θ for every node, then recomputes absolute (x, y) positions
-	 * recursively from roots downward.
+	 * Updates θ for every node, then recomputes absolute (x, y) positions.
 	 */
 	update(dt: number): void {
 		if (!this.graph) return;
+
+		if (this.settings.galacticRotation && this.settings.keplerBaseOmega > 0) {
+			this.applyGalaxySizeToRoots(dt);
+		}
 
 		for (const state of this.states.values()) {
 			state.theta += state.omega * dt;
 		}
 
-		// Recompute absolute positions starting from roots.
-		for (const rootId of this.graph.roots) {
-			this.updatePositionsRecursive(rootId);
+		// Recompute absolute positions in depth order (parents before children)
+		for (const nodeId of this.orderedNonRootNodeIds) {
+			this.updateNodePosition(nodeId);
 		}
 	}
 
@@ -119,6 +138,8 @@ export class PhysicsEngine {
 	updatePhysicsParameters(settings: OrbitPluginSettings): void {
 		this.settings = settings;
 		if (!this.graph) return;
+
+		this.applyGalaxySizeToRoots(0);
 
 		for (const [nodeId, state] of this.states) {
 			const node = this.graph.nodes.get(nodeId);
@@ -166,6 +187,10 @@ export class PhysicsEngine {
 			const baseOmega = settings.keplerBaseOmega >= 0 ? settings.keplerBaseOmega : 5;
 			state.omega = (state.radius > 0 ? (baseOmega / Math.sqrt(state.radius)) : 0) * direction;
 		}
+
+		for (const nodeId of this.orderedNonRootNodeIds) {
+			this.updateNodePosition(nodeId);
+		}
 	}
 
 	// -----------------------------------------------------------------------
@@ -173,17 +198,85 @@ export class PhysicsEngine {
 	// -----------------------------------------------------------------------
 
 	/**
-	 * Place root nodes at random positions ensuring no two solar systems
-	 * overlap. Each root's "system radius" is estimated as the maximum
-	 * orbital extent of its deepest descendants.
+	 * Adjust root node positions based on Galaxy Size scale factor and Keplerian Galactic Rotation.
+	 */
+	private applyGalaxySizeToRoots(dt: number = 0): void {
+		if (this.baseRootPositions.size === 0) return;
+
+		let sumX = 0;
+		let sumY = 0;
+		for (const pos of this.baseRootPositions.values()) {
+			sumX += pos.x;
+			sumY += pos.y;
+		}
+		const centroidX = sumX / this.baseRootPositions.size;
+		const centroidY = sumY / this.baseRootPositions.size;
+
+		let galacticDirection = -1;
+		if (this.settings.orbitDirection === 'clockwise') {
+			galacticDirection = 1;
+		} else if (this.settings.orbitDirection === 'counterclockwise') {
+			galacticDirection = -1;
+		} else {
+			// 'cross'
+			galacticDirection = -1;
+		}
+
+		const scale = this.settings.galaxySize ?? 1.0;
+
+		for (const [rootId, basePos] of this.baseRootPositions) {
+			const relX = (basePos.x - centroidX) * scale;
+			const relY = (basePos.y - centroidY) * scale;
+			const distFromCentroid = Math.hypot(relX, relY);
+			const initialAngle = Math.atan2(relY, relX);
+
+			if (dt > 0 && this.settings.galacticRotation && this.settings.keplerBaseOmega > 0) {
+				// Kepler's Law for Galactic Rotation: omega is inversely proportional to sqrt(distance)
+				const effectiveDist = Math.max(distFromCentroid, 50);
+				const baseOmega = this.settings.keplerBaseOmega;
+				const rootOmega = (baseOmega / Math.sqrt(effectiveDist)) * galacticDirection;
+
+				let currentAngle = this.rootAngles.get(rootId) ?? 0;
+				currentAngle += rootOmega * dt;
+				this.rootAngles.set(rootId, currentAngle);
+			}
+
+			const rotAngle = this.settings.galacticRotation ? (this.rootAngles.get(rootId) ?? 0) : 0;
+			const finalAngle = initialAngle + rotAngle;
+
+			const state = this.states.get(rootId);
+			if (state) {
+				state.x = centroidX + distFromCentroid * Math.cos(finalAngle);
+				state.y = centroidY + distFromCentroid * Math.sin(finalAngle);
+			}
+		}
+	}
+
+	/**
+	 * Place root nodes ensuring system roots occupy the inner area and
+	 * lone star roots are pushed to the outer edges.
 	 */
 	private placeRoots(graph: ParsedGraph): void {
 		const placed: { x: number; y: number; systemRadius: number }[] = [];
+		this.baseRootPositions.clear();
+
+		// Separate roots into system roots (has children) and lone roots (no children)
+		const systemRoots: string[] = [];
+		const loneRoots: string[] = [];
 
 		for (const rootId of graph.roots) {
 			const rootNode = graph.nodes.get(rootId);
 			if (!rootNode) continue;
+			if (rootNode.children.length > 0) {
+				systemRoots.push(rootId);
+			} else {
+				loneRoots.push(rootId);
+			}
+		}
 
+		// 1. Place system roots near the center
+		for (const rootId of systemRoots) {
+			const rootNode = graph.nodes.get(rootId)!;
 			const systemRadius = this.estimateSystemRadius(rootNode, graph);
 			const systemMaxDepth = this.systemMaxDepths.get(rootId) ?? 0;
 			const { nodeRadius: rootRelNodeRadius } = this.getNodeRelativeSizes(rootNode.depth, systemMaxDepth);
@@ -194,13 +287,11 @@ export class PhysicsEngine {
 			let attempts = 0;
 			const maxAttempts = 500;
 
-			// Spiral-out placement to guarantee convergence.
 			let spiralAngle = Math.random() * Math.PI * 2;
 			let spiralRadius = 0;
 
 			do {
 				if (attempts === 0 && placed.length === 0) {
-					// First root at origin.
 					x = 0;
 					y = 0;
 				} else {
@@ -216,6 +307,7 @@ export class PhysicsEngine {
 			);
 
 			placed.push({ x, y, systemRadius });
+			this.baseRootPositions.set(rootId, { x, y });
 
 			this.states.set(rootId, {
 				nodeId: rootId,
@@ -229,6 +321,67 @@ export class PhysicsEngine {
 				systemMaxDepth,
 			});
 		}
+
+		// Calculate outer boundary for lone roots if system roots were placed
+		let outerStartRadius = 0;
+		if (placed.length > 0) {
+			let maxExtent = 0;
+			for (const p of placed) {
+				const extent = Math.hypot(p.x, p.y) + p.systemRadius;
+				if (extent > maxExtent) maxExtent = extent;
+			}
+			outerStartRadius = maxExtent + ROOT_PADDING;
+		}
+
+		// 2. Place lone star roots along the outer edges
+		for (const rootId of loneRoots) {
+			const rootNode = graph.nodes.get(rootId)!;
+			const systemRadius = this.estimateSystemRadius(rootNode, graph);
+			const systemMaxDepth = this.systemMaxDepths.get(rootId) ?? 0;
+			const { nodeRadius: rootRelNodeRadius } = this.getNodeRelativeSizes(rootNode.depth, systemMaxDepth);
+			const renderRadius = rootRelNodeRadius * BASE_NODE_SCALE * this.settings.nodeSizeScale;
+
+			let x = 0;
+			let y = 0;
+			let attempts = 0;
+			const maxAttempts = 500;
+
+			let spiralAngle = Math.random() * Math.PI * 2;
+			let spiralRadius = outerStartRadius;
+
+			do {
+				if (attempts === 0 && placed.length === 0) {
+					x = 0;
+					y = 0;
+				} else {
+					spiralAngle += 0.6;
+					spiralRadius += (systemRadius + ROOT_PADDING * 0.5) * 0.2;
+					x = Math.cos(spiralAngle) * spiralRadius;
+					y = Math.sin(spiralAngle) * spiralRadius;
+				}
+				attempts++;
+			} while (
+				attempts < maxAttempts &&
+				this.overlapsAny(x, y, systemRadius, placed)
+			);
+
+			placed.push({ x, y, systemRadius });
+			this.baseRootPositions.set(rootId, { x, y });
+
+			this.states.set(rootId, {
+				nodeId: rootId,
+				theta: 0,
+				omega: 0,
+				radius: 0,
+				x,
+				y,
+				renderRadius,
+				siblingIndex: 0,
+				systemMaxDepth,
+			});
+		}
+
+		this.applyGalaxySizeToRoots();
 	}
 
 	/**
@@ -394,46 +547,49 @@ export class PhysicsEngine {
 	 * Compute relative node radius and orbit radius based on the graph's maximum depth
 	 * and the node's depth/generation.
 	 */
-	private getNodeRelativeSizes(depth: number, maxDepth: number): { nodeRadius: number; orbitRadius: number } {
+	private getNodeRelativeSizes(depth: number, maxDepth: number, nodeId?: string): { nodeRadius: number; orbitRadius: number } {
+		if (nodeId && nodeId.startsWith('virtual-tag:')) {
+			return { nodeRadius: 1.0, orbitRadius: 0 };
+		}
+
 		const d = Math.max(0, depth);
 
 		if (maxDepth === 0) {
-			// [노드 1개]
-			// 최상위 노드 - 노드 반지름: 45px (상대적 반지름 0.75)
-			return { nodeRadius: 0.75, orbitRadius: 0 };
+			// [maxDepth = 0]
+			// Depth 0 노드 - Type 3-A (독립 노드), 노드 반지름: 0.7, 궤도 반지름: 0
+			return { nodeRadius: 0.7, orbitRadius: 0 };
 		} else if (maxDepth === 1) {
-			// [노드 2개]
-			// 최상위 노드 - Type 3, 노드 반지름: 1
-			// 1세대 노드 - Type 4, 노드 반지름: 1/2, 궤도 반지름: 1
+			// [maxDepth = 1]
+			// Depth 0 노드 - Type 3, 노드 반지름: 1, 궤도 반지름: 0
+			// Depth 1 노드 - Type 4, 노드 반지름: 1/2 (0.5), 궤도 반지름: 1
 			if (d === 0) return { nodeRadius: 1, orbitRadius: 0 };
 			return { nodeRadius: 0.5, orbitRadius: 1 };
 		} else if (maxDepth === 2) {
-			// [노드 3개]
-			// 최상위 노드 - Type 3, 노드 반지름: 1
-			// 1세대 노드 - Type 4, 노드 반지름: 1/2, 궤도 반지름: 1
-			// 2세대 노드 - Type 5, 노드 반지름: 1/4, 궤도 반지름: 1/3
+			// [maxDepth = 2]
+			// Depth 0 노드 - Type 3, 노드 반지름: 1, 궤도 반지름: 0
+			// Depth 1 노드 - Type 4, 노드 반지름: 1/2 (0.5), 궤도 반지름: 1
+			// Depth 2 노드 - Type 5, 노드 반지름: 1/4 (0.25), 궤도 반지름: 1/3
 			if (d === 0) return { nodeRadius: 1, orbitRadius: 0 };
 			if (d === 1) return { nodeRadius: 0.5, orbitRadius: 1 };
 			return { nodeRadius: 0.25, orbitRadius: 1 / 3 };
 		} else if (maxDepth === 3) {
-			// [노드 4개]
-			// 최상위 노드 - Type 2, 노드 반지름: 2
-			// 1세대 노드 - Type 3, 노드 반지름: 1, 궤도 반지름: 3
-			// 2세대 노드 - Type 4, 노드 반지름: 1/2, 궤도 반지름: 1
-			// 3세대 노드 - Type 5, 노드 반지름: 1/4, 궤도 반지름: 1/3
+			// [maxDepth = 3]
+			// Depth 0 노드 - Type 2, 노드 반지름: 2, 궤도 반지름: 0
+			// Depth 1 노드 - Type 3, 노드 반지름: 1, 궤도 반지름: 3
+			// Depth 2 노드 - Type 4, 노드 반지름: 1/2 (0.5), 궤도 반지름: 1
+			// Depth 3 노드 - Type 5, 노드 반지름: 1/4 (0.25), 궤도 반지름: 1/3
 			if (d === 0) return { nodeRadius: 2, orbitRadius: 0 };
 			if (d === 1) return { nodeRadius: 1, orbitRadius: 3 };
 			if (d === 2) return { nodeRadius: 0.5, orbitRadius: 1 };
 			return { nodeRadius: 0.25, orbitRadius: 1 / 3 };
 		} else {
-			// [노드 5개 이상] (maxDepth >= 4)
-			// 최상위 노드 - Type 1, 노드 반지름: 3 (예외적으로 3으로 축소)
-			// 1세대 노드 - Type 2, 노드 반지름: 2, 궤도 반지름: 9
-			// 2세대 노드 - Type 3, 노드 반지름: 1, 궤도 반지름: 3
-			// 3세대 노드 - Type 4, 노드 반지름: 1/2, 궤도 반지름: 1
-			// 4세대 노드 - Type 5, 노드 반지름: 1/4, 궤도 반지름: 1/3
-			// (5세대 노드부터는 이전 세대 노드의 1/2 크기. 궤도 반지름 1/3으로 작아짐. 5세대는 Type 6 반지름 1/8 및 궤도 반지름 1/9...)
-			if (d === 0) return { nodeRadius: 3, orbitRadius: 0 };
+			// [maxDepth >= 4]
+			// Depth 0 노드 - Type 1, 노드 반지름: 4, 궤도 반지름: 0
+			// Depth 1 노드 - Type 2, 노드 반지름: 2, 궤도 반지름: 9
+			// Depth 2 노드 - Type 3, 노드 반지름: 1, 궤도 반지름: 3
+			// Depth 3 노드 - Type 4, 노드 반지름: 1/2 (0.5), 궤도 반지름: 1
+			// Depth 4 이상 노드 - Type 5, 노드 반지름: 1/4 (0.25), 궤도 반지름: 1/3 (d가 증가할수록 노드반지름 1/2, 궤도반지름 1/3)
+			if (d === 0) return { nodeRadius: 4, orbitRadius: 0 };
 			const nodeRadius = 4 * Math.pow(0.5, d);
 			const orbitRadius = 9 * Math.pow(1 / 3, d - 1);
 			return { nodeRadius, orbitRadius };
@@ -441,52 +597,89 @@ export class PhysicsEngine {
 	}
 
 	// -----------------------------------------------------------------------
-	// Position Update (Recursive)
+	// Position Update (N=1, N=2 Ellipse, N>=3 Centroid)
 	// -----------------------------------------------------------------------
 
 	/**
-	 * Recursively compute absolute (x, y) positions for `nodeId` and all
-	 * of its descendants.
+	 * Compute absolute (x, y) position for a single node based on parent count:
+	 * - N=1: Circle around parent node
+	 * - N=2: Rotated ellipse around midpoint of P1 & P2
+	 * - N>=3: Circle around centroid of P1..Pn extending past farthest parent
 	 */
-	private updatePositionsRecursive(nodeId: string): void {
+	private updateNodePosition(nodeId: string): void {
 		const node = this.graph?.nodes.get(nodeId);
 		const state = this.states.get(nodeId);
 		if (!node || !state) return;
 
-		for (const childId of node.children) {
-			const childNode = this.graph?.nodes.get(childId);
-			const childState = this.states.get(childId);
-			if (!childNode || !childState) continue;
+		const numParents = node.parents.length;
+		if (numParents === 0) return; // Root node position is fixed in place
 
-			// Determine the center of orbit.
-			let cx: number;
-			let cy: number;
+		if (numParents === 1) {
+			const parentState = this.states.get(node.parents[0]!);
+			if (parentState) {
+				state.x = parentState.x + state.radius * Math.cos(state.theta);
+				state.y = parentState.y + state.radius * Math.sin(state.theta);
+			}
+		} else if (numParents === 2) {
+			const ps1 = this.states.get(node.parents[0]!);
+			const ps2 = this.states.get(node.parents[1]!);
+			if (ps1 && ps2) {
+				const cx = (ps1.x + ps2.x) / 2;
+				const cy = (ps1.y + ps2.y) / 2;
+				const dx = ps2.x - ps1.x;
+				const dy = ps2.y - ps1.y;
+				const d = Math.sqrt(dx * dx + dy * dy);
 
-			if (childNode.parents.length >= 2) {
-				// Multi-parent centroid.
-				let sumX = 0;
-				let sumY = 0;
-				let count = 0;
-				for (const pid of childNode.parents) {
-					const ps = this.states.get(pid);
-					if (ps) {
-						sumX += ps.x;
-						sumY += ps.y;
-						count++;
-					}
+				if (this.settings.dualParentOvalOrbit ?? true) {
+					const phi = Math.atan2(dy, dx);
+					const a = d / 2 + state.radius;
+					const b = a * 0.6;
+
+					const xUnrotated = a * Math.cos(state.theta);
+					const yUnrotated = b * Math.sin(state.theta);
+
+					state.x = cx + xUnrotated * Math.cos(phi) - yUnrotated * Math.sin(phi);
+					state.y = cy + xUnrotated * Math.sin(phi) + yUnrotated * Math.cos(phi);
+				} else {
+					const orbitRadius = d / 2 + state.radius;
+					state.x = cx + orbitRadius * Math.cos(state.theta);
+					state.y = cy + orbitRadius * Math.sin(state.theta);
 				}
-				cx = count > 0 ? sumX / count : state.x;
-				cy = count > 0 ? sumY / count : state.y;
 			} else {
-				cx = state.x;
-				cy = state.y;
+				const ps = ps1 || ps2;
+				if (ps) {
+					state.x = ps.x + state.radius * Math.cos(state.theta);
+					state.y = ps.y + state.radius * Math.sin(state.theta);
+				}
+			}
+		} else {
+			// numParents >= 3
+			let sumX = 0;
+			let sumY = 0;
+			const validParents: OrbitalState[] = [];
+			for (const pid of node.parents) {
+				const ps = this.states.get(pid);
+				if (ps) {
+					sumX += ps.x;
+					sumY += ps.y;
+					validParents.push(ps);
+				}
 			}
 
-			childState.x = cx + childState.radius * Math.cos(childState.theta);
-			childState.y = cy + childState.radius * Math.sin(childState.theta);
+			if (validParents.length > 0) {
+				const cx = sumX / validParents.length;
+				const cy = sumY / validParents.length;
 
-			// Recurse into this child's subtree.
-			this.updatePositionsRecursive(childId);
+				let maxDist = 0;
+				for (const ps of validParents) {
+					const dist = Math.hypot(ps.x - cx, ps.y - cy);
+					if (dist > maxDist) maxDist = dist;
+				}
+
+				const orbitRadius = maxDist + state.radius;
+				state.x = cx + orbitRadius * Math.cos(state.theta);
+				state.y = cy + orbitRadius * Math.sin(state.theta);
+			}
 		}
 	}
 }

@@ -4,7 +4,7 @@
 
 import { Plugin, WorkspaceLeaf, PluginSettingTab, Setting, App } from 'obsidian';
 import { OrbitGraphView, VIEW_TYPE_ORBIT } from './view';
-import { OrbitPluginSettings, DEFAULT_SETTINGS, SiblingSortMode, OrbitThemeType, OrbitDirectionType, OrbitParentSourceType } from './types';
+import { OrbitPluginSettings, DEFAULT_SETTINGS, SiblingSortMode, OrbitThemeType, OrbitDirectionType, OrbitParentSourceType, LineToParentStyle, OrbitTraceStyle } from './types';
 
 export default class OrbitPlugin extends Plugin {
 	settings: OrbitPluginSettings = { ...DEFAULT_SETTINGS };
@@ -76,6 +76,40 @@ export default class OrbitPlugin extends Plugin {
 	async loadSettings(): Promise<void> {
 		const data = await this.loadData();
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
+
+		// Synchronization/Migration for Gravity setting
+		if (data) {
+			const grav = (data as { gravity?: number }).gravity ?? 1.0;
+			this.settings.gravity = grav;
+			this.settings.orbitRadiusScale = grav + 0.5;
+			this.settings.galaxySize = grav + 0.5;
+		}
+
+		// Migration from legacy hideOtherNodes setting
+		if (data && (data as { hideOtherNodes?: boolean }).hideOtherNodes !== undefined && data.fadeOtherNodes === undefined) {
+			this.settings.fadeOtherNodes = (data as { hideOtherNodes?: boolean }).hideOtherNodes!;
+		}
+
+		// Migration from legacy hideLoneStars setting
+		if (data && (data as { hideLoneStars?: boolean }).hideLoneStars !== undefined && data.hideLoneNodes === undefined) {
+			this.settings.hideLoneNodes = (data as { hideLoneStars?: boolean }).hideLoneStars!;
+		}
+
+		// Migration from legacy hideLink boolean setting
+		if (data && (data as { hideLink?: boolean }).hideLink !== undefined && data.lineToParentStyle === undefined) {
+			this.settings.lineToParentStyle = (data as { hideLink?: boolean }).hideLink ? 'hidden' : 'translucent';
+		}
+
+		// Migration from legacy hideOrbitTrace boolean setting
+		if (data && (data as { hideOrbitTrace?: boolean }).hideOrbitTrace !== undefined && data.orbitTraceStyle === undefined) {
+			this.settings.orbitTraceStyle = (data as { hideOrbitTrace?: boolean }).hideOrbitTrace ? 'hidden' : 'translucent';
+		}
+
+		// Convert legacy string values ('hide' -> 'hidden', 'transparent' -> 'translucent')
+		if ((this.settings.orbitTraceStyle as string) === 'hide') this.settings.orbitTraceStyle = 'hidden';
+		if ((this.settings.orbitTraceStyle as string) === 'transparent') this.settings.orbitTraceStyle = 'translucent';
+		if ((this.settings.lineToParentStyle as string) === 'hide') this.settings.lineToParentStyle = 'hidden';
+		if ((this.settings.lineToParentStyle as string) === 'transparent') this.settings.lineToParentStyle = 'translucent';
 	}
 
 	async saveSettings(): Promise<void> {
@@ -104,24 +138,30 @@ class OrbitSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		containerEl.createEl('h2', { text: 'Orbit Graph Settings' });
+		containerEl.createEl('p', {
+			text: 'You can open the Orbit Graph View using the orbit icon in the left sidebar.',
+			cls: 'setting-item-description'
+		});
 
+		// 1. Theme
 		new Setting(containerEl)
-			.setName('Sibling Sort Order')
+			.setName('Theme')
 			.addDropdown((dropdown) =>
 				dropdown
-					.addOption('fileSize', 'File Size')
-					.addOption('createdTime', 'Created Time')
-					.addOption('modifiedTime', 'Modified Time')
-					.addOption('alphabetical', 'Alphabetical')
-					.setValue(this.plugin.settings.siblingSortMode)
+					.addOption('light', 'Light Theme (White and Grey)')
+					.addOption('dark', 'Dark Theme (Black and White)')
+					.addOption('celestial', 'Celestial Theme (Stars and Planets)')
+					.setValue(this.plugin.settings.theme)
 					.onChange(async (value) => {
-						this.plugin.settings.siblingSortMode = value as SiblingSortMode;
+						this.plugin.settings.theme = value as OrbitThemeType;
 						await this.plugin.saveSettings();
 					})
 			);
 
+		// 2. Orbit Method
 		new Setting(containerEl)
-			.setName('Orbit Relation Source')
+			.setName('Orbit Method')
+			.setDesc('How nodes orbit')
 			.addDropdown((dropdown) =>
 				dropdown
 					.addOption('frontmatter', 'Frontmatter metadata (gravity_parent)')
@@ -135,106 +175,26 @@ class OrbitSettingTab extends PluginSettingTab {
 					})
 			);
 
+		// 3. Sibling Sort Order
 		new Setting(containerEl)
-			.setName('Hide Lone Stars')
-			.addToggle((toggle) =>
-				toggle
-					.setValue(this.plugin.settings.hideLoneStars)
-					.onChange(async (value) => {
-						this.plugin.settings.hideLoneStars = value;
-						await this.plugin.saveSettings();
-					})
-			);
-
-		new Setting(containerEl)
-			.setName('Hide Orbit Trace')
-			.addToggle((toggle) =>
-				toggle
-					.setValue(this.plugin.settings.hideOrbitTrace)
-					.onChange(async (value) => {
-						this.plugin.settings.hideOrbitTrace = value;
-						await this.plugin.saveSettings();
-					})
-			);
-
-		new Setting(containerEl)
-			.setName('Hide Line to Parent')
-			.addToggle((toggle) =>
-				toggle
-					.setValue(this.plugin.settings.hideLink)
-					.onChange(async (value) => {
-						this.plugin.settings.hideLink = value;
-						await this.plugin.saveSettings();
-					})
-			);
-
-		new Setting(containerEl)
-			.setName('Orbit Theme')
+			.setName('Sibling Sort Order')
+			.setDesc('Same-level node arrangement')
 			.addDropdown((dropdown) =>
 				dropdown
-					.addOption('celestial', 'Celestial Theme (Stars and Planets)')
-					.addOption('light', 'Light Theme (White and Grey)')
-					.addOption('dark', 'Dark Theme (Black and White)')
-					.setValue(this.plugin.settings.theme)
+					.addOption('fileSize', 'File Size')
+					.addOption('createdTime', 'Created Time')
+					.addOption('modifiedTime', 'Modified Time')
+					.addOption('alphabetical', 'Alphabetical')
+					.setValue(this.plugin.settings.siblingSortMode)
 					.onChange(async (value) => {
-						this.plugin.settings.theme = value as OrbitThemeType;
+						this.plugin.settings.siblingSortMode = value as SiblingSortMode;
 						await this.plugin.saveSettings();
 					})
 			);
 
-		new Setting(containerEl)
-			.setName('Orbit Direction')
-			.addDropdown((dropdown) =>
-				dropdown
-					.addOption('cross', 'Cross Path (Alternating by depth)')
-					.addOption('clockwise', 'Clockwise')
-					.addOption('counterclockwise', 'Counterclockwise')
-					.setValue(this.plugin.settings.orbitDirection)
-					.onChange(async (value) => {
-						this.plugin.settings.orbitDirection = value as OrbitDirectionType;
-						await this.plugin.saveSettings();
-					})
-			);
-
-		new Setting(containerEl)
-			.setName('Kepler Speed')
-			.addDropdown((dropdown) =>
-				dropdown
-					.addOption('0', 'Stationary')
-					.addOption('2.5', 'Slow')
-					.addOption('5', 'Moderate')
-					.addOption('10', 'Fast')
-					.setValue(String(this.plugin.settings.keplerBaseOmega))
-					.onChange(async (value) => {
-						this.plugin.settings.keplerBaseOmega = parseFloat(value);
-						await this.plugin.saveSettings();
-					})
-			);
-
-		new Setting(containerEl)
-			.setName('Orbit Radius Scale')
-			.addSlider((slider) =>
-				slider
-					.setLimits(0.5, 2.0, 0.1)
-					.setValue(this.plugin.settings.orbitRadiusScale)
-					.setDynamicTooltip()
-					.onChange(async (value) => {
-						this.plugin.settings.orbitRadiusScale = value;
-						await this.plugin.saveSettings();
-					})
-			);
-
-		new Setting(containerEl)
-			.setName('Node Size Scale')
-			.addSlider((slider) =>
-				slider
-					.setLimits(0.5, 2.0, 0.1)
-					.setValue(this.plugin.settings.nodeSizeScale)
-					.setDynamicTooltip()
-					.onChange(async (value) => {
-						this.plugin.settings.nodeSizeScale = value;
-						await this.plugin.saveSettings();
-					})
-			);
+		containerEl.createEl('p', {
+			text: 'More display settings are available in the Orbit Graph View settings panel.',
+			cls: 'setting-item-description'
+		});
 	}
 }

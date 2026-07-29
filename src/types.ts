@@ -16,6 +16,8 @@ export type SiblingSortMode =
 export type OrbitThemeType = 'light' | 'dark' | 'celestial';
 export type OrbitDirectionType = 'clockwise' | 'counterclockwise' | 'cross';
 export type OrbitParentSourceType = 'frontmatter' | 'tag' | 'outlink' | 'backlink';
+export type LineToParentStyle = 'hidden' | 'translucent' | 'solid';
+export type OrbitTraceStyle = 'hidden' | 'translucent' | 'solid';
 
 /**
  * Plugin settings persisted to data.json.
@@ -26,10 +28,19 @@ export interface OrbitPluginSettings {
 	theme: OrbitThemeType;
 	orbitDirection: OrbitDirectionType;
 	parentSource: OrbitParentSourceType;
-	hideLoneStars: boolean;
-	hideOrbitTrace: boolean;
-	hideLink: boolean;
+	hideLoneNodes: boolean;
+	hideLoneStars?: boolean;
+	hideSingleParentNodes: boolean;
+	hideMultiParentNodes: boolean;
+	fadeOtherNodes?: boolean;
+	hideOtherNodes?: boolean;
+	dualParentOvalOrbit: boolean;
+	orbitTraceStyle: OrbitTraceStyle;
+	lineToParentStyle: LineToParentStyle;
 	orbitRadiusScale: number;
+	galaxySize: number;
+	gravity?: number;
+	galacticRotation: boolean;
 	nodeSizeScale: number;
 }
 
@@ -39,10 +50,17 @@ export const DEFAULT_SETTINGS: OrbitPluginSettings = {
 	theme: 'light',
 	orbitDirection: 'counterclockwise',
 	parentSource: 'frontmatter',
-	hideLoneStars: false,
-	hideOrbitTrace: false,
-	hideLink: false,
-	orbitRadiusScale: 1.0,
+	hideLoneNodes: false,
+	hideSingleParentNodes: false,
+	hideMultiParentNodes: false,
+	fadeOtherNodes: true,
+	dualParentOvalOrbit: true,
+	orbitTraceStyle: 'translucent',
+	lineToParentStyle: 'translucent',
+	orbitRadiusScale: 1.5,
+	galaxySize: 1.5,
+	gravity: 1.0,
+	galacticRotation: false,
 	nodeSizeScale: 1.0,
 };
 
@@ -121,6 +139,9 @@ export interface OrbitalState {
 
 	/** Maximum depth of this node's solar system. */
 	systemMaxDepth?: number;
+
+	/** Recent world position history queue for real-time trajectory trails. */
+	trail?: { x: number; y: number }[];
 }
 
 // ---------------------------------------------------------------------------

@@ -10,7 +10,7 @@
 // - Inverse-zoom text scaling for readable labels at any zoom level
 // ============================================================================
 
-import { GraphNode, OrbitalState, ViewTransform, ParsedGraph, OrbitPluginSettings, OrbitThemeType } from './types';
+import { GraphNode, OrbitalState, ViewTransform, ParsedGraph, OrbitPluginSettings, OrbitThemeType, OrbitTraceStyle, OrbitDirectionType, LineToParentStyle } from './types';
 
 // ---------------------------------------------------------------------------
 // Color Themes & Palettes
@@ -60,13 +60,10 @@ function getNodeColor(
 	siblingIndex: number = 0
 ): string {
 	if (nodeId.startsWith('virtual-tag:')) {
-		if (theme === 'light') {
-			return '#7856FF'; // Elegant deep purple for light theme
-		}
-		return '#A259FF'; // Vibrant neon purple for dark/celestial themes
+		return '#0CB04E';
 	}
 	if (theme === 'light') {
-		return '#808080'; // Grey
+		return '#5C5C5C'; // Grey
 	}
 	if (theme === 'dark') {
 		return '#ffffff'; // White
@@ -83,78 +80,68 @@ function getNodeColor(
 
 		if (isType4) {
 			const planetColors = [
-				'#2271B3', // 1st Node (Earth blue)
-				'#E3BB76', // 2nd Node (Venus yellowish-white)
-				'#D39C7E', // 3rd Node (Jupiter wood/tan)
-				'#C5AB6E', // 4th Node (Saturn sandy yellow)
-				'#BBE1E4', // 5th Node (Uranus pale cyan)
-				'#6081FF', // 6th Node (Neptune deep blue)
+				'#0051C2',  // 1st Node (Earth blue)
+				'#D39C7E',  // 2nd Node (Jupiter tan)
+				'#C5AB6E',  // 3rd Node (Saturn sandy yellow)
+				'#5BCEE4',  // 4th Node (Neptune deep blue)
 			];
 			if (siblingIndex >= 0) {
 				return planetColors[siblingIndex % planetColors.length]!;
 			}
-			return '#2271B3';
+			return '#0051C2';
 		}
 	}
 
-	// -- Standard depth colors fallback --
+	// -- Standard depth colors fallback for Celestial Theme --
+	const type1Colors = ['#FF969D', '#FF6880', '#FF5350'];
+	const type2Colors = ['#D8FFFF', '#BDFFFF', '#93FFFF'];
+	const type3Colors = ['#FFC84B', '#FFE267', '#FFB86F'];
+
+	const getType1Color = () => getRandomPaletteColor(type1Colors, nodeId, siblingIndex);
+	const getType2Color = () => getRandomPaletteColor(type2Colors, nodeId, siblingIndex);
+	const getType3Color = () => getRandomPaletteColor(type3Colors, nodeId, siblingIndex);
+
 	if (maxDepth === 0) {
-		return '#FF3B30'; // Root = Red
+		return getType3Color(); // Type 3-A
 	}
 	if (maxDepth === 1) {
-		if (depth === 0) return '#FFCC00'; // Root = Yellow
-		return '#2271B3'; // 1st Gen = Blue
+		if (depth === 0) return getType3Color(); // Type 3
+		return '#0051C2'; // Type 4
 	}
 	if (maxDepth === 2) {
-		if (depth === 0) return '#FFCC00'; // Root = Yellow
-		if (depth === 1) return '#2271B3'; // 1st Gen = Blue
-		return '#8E8E93'; // 2nd Gen = Grey
+		if (depth === 0) return getType3Color(); // Type 3
+		if (depth === 1) return '#0051C2'; // Type 4
+		return '#BFBFBF'; // Type 5 (Grey)
 	}
 	if (maxDepth === 3) {
-		if (depth === 0) return '#FFFFFF'; // Root = White
-		if (depth === 1) return '#FFCC00'; // 1st Gen = Yellow
-		if (depth === 2) return '#2271B3'; // 2nd Gen = Blue
-		return '#8E8E93'; // 3rd Gen = Grey
+		if (depth === 0) return getType2Color(); // Type 2 (Skyblue)
+		if (depth === 1) return getType3Color(); // Type 3
+		if (depth === 2) return '#0051C2'; // Type 4
+		return '#BFBFBF'; // Type 5 (Grey)
 	}
 	// maxDepth >= 4
-	if (depth === 0) return '#C4E9F7'; // Root = Skyblue (Type 1)
-	if (depth === 1) return '#FFFFFF'; // 1st Gen = White
-	if (depth === 2) return '#FFCC00'; // 2nd Gen = Yellow
-	if (depth === 3) return '#2271B3'; // 3rd Gen = Blue
-	return '#8E8E93'; // 4th+ Gen = Grey
+	if (depth === 0) return getType1Color(); // Type 1 (Red)
+	if (depth === 1) return getType2Color(); // Type 2 (Skyblue)
+	if (depth === 2) return getType3Color(); // Type 3
+	if (depth === 3) return '#0051C2'; // Type 4
+	return '#BFBFBF'; // Type 5 (Grey)
+}
+
+function getRandomPaletteColor(palette: string[], nodeId: string, offset: number = 0): string {
+	let hash = 0;
+	for (let i = 0; i < nodeId.length; i++) {
+		hash = (hash << 5) - hash + nodeId.charCodeAt(i);
+		hash |= 0;
+	}
+	const idx = Math.abs(hash + offset) % palette.length;
+	return palette[idx]!;
 }
 
 /**
- * Returns a semi-transparent glow color matching the base node color.
+ * Returns a semi-transparent glow (halo) color matching the base node color (20% opacity).
  */
-function getNodeGlowColor(baseColor: string, theme: OrbitThemeType): string {
-	if (baseColor.toUpperCase() === '#7856FF' || baseColor.toUpperCase() === '#A259FF') {
-		if (theme === 'light') {
-			return 'rgba(120, 86, 255, 0.15)';
-		}
-		return 'rgba(162, 89, 255, 0.4)';
-	}
-	if (theme === 'light') {
-		return 'rgba(128, 128, 128, 0.15)';
-	}
-	switch (baseColor.toUpperCase()) {
-		case '#FF3B30': return 'rgba(255, 59, 48, 0.3)';
-		case '#FFCC00': return 'rgba(255, 204, 0, 0.3)';
-		case '#2271B3': return 'rgba(34, 113, 179, 0.3)';
-		case '#8E8E93': return 'rgba(142, 142, 147, 0.25)';
-		case '#FFFFFF': return 'rgba(255, 255, 255, 0.3)';
-		case '#5AC8FA':
-		case '#C4E9F7': return 'rgba(90, 200, 250, 0.3)';
-		// Celestial 2 Theme Planet Colors
-		case '#A5A5A5': return 'rgba(165, 165, 165, 0.3)';
-		case '#E3BB76': return 'rgba(227, 187, 118, 0.3)';
-		case '#B24522': return 'rgba(178, 69, 34, 0.3)';
-		case '#D39C7E': return 'rgba(211, 156, 126, 0.3)';
-		case '#C5AB6E': return 'rgba(197, 171, 110, 0.3)';
-		case '#BBE1E4': return 'rgba(187, 225, 228, 0.3)';
-		case '#6081FF': return 'rgba(96, 129, 255, 0.3)';
-		default: return 'rgba(255, 255, 255, 0.2)';
-	}
+function getNodeGlowColor(baseColor: string, _theme: OrbitThemeType): string {
+	return getRgbaColor(baseColor, 0.2);
 }
 
 /**
@@ -213,13 +200,14 @@ export class CanvasRenderer {
 		states: ReadonlyMap<string, OrbitalState>,
 		transform: ViewTransform,
 		settings: OrbitPluginSettings,
+		focusedNodeId: string | null = null,
 	): void {
 		const ctx = this.ctx;
 		const w = this.canvas.getBoundingClientRect().width;
 		const h = this.canvas.getBoundingClientRect().height;
 
-		const theme = settings.theme || 'celestial';
-		const colors = THEMES[theme] || THEMES.celestial;
+		const theme = settings.theme || 'light';
+		const colors = THEMES[theme] || THEMES.light;
 
 		// Compute the maximum depth of the graph dynamically
 		let maxDepth = 0;
@@ -227,6 +215,11 @@ export class CanvasRenderer {
 			if (node.depth > maxDepth) {
 				maxDepth = node.depth;
 			}
+		}
+
+		let relevantSet: Set<string> | null = null;
+		if (focusedNodeId && graph.nodes.has(focusedNodeId)) {
+			relevantSet = this.getRelevantNodeSet(graph, focusedNodeId);
 		}
 
 		// -- Clear ---------------------------------------------------------------
@@ -258,18 +251,35 @@ export class CanvasRenderer {
 		const isVisible = (x: number, y: number, r: number): boolean =>
 			x + r > vpLeft && x - r < vpRight && y + r > vpTop && y - r < vpBottom;
 
+		const fadeOtherNodes = settings.fadeOtherNodes ?? settings.hideOtherNodes ?? true;
+
 		// -- Layer 1: Orbit paths ------------------------------------------------
-		if (!settings.hideOrbitTrace) {
-			this.drawOrbitPaths(ctx, graph, states, isVisible, colors.orbit, theme, maxDepth);
+		const traceStyle = settings.orbitTraceStyle ?? 'translucent';
+		if (traceStyle !== 'hidden') {
+			this.drawOrbitPaths(
+				ctx, graph, states, isVisible, colors.orbit, theme, maxDepth, traceStyle,
+				settings.dualParentOvalOrbit ?? true, settings.orbitDirection,
+				settings.hideSingleParentNodes ?? false, settings.hideMultiParentNodes ?? false,
+				relevantSet, fadeOtherNodes
+			);
 		}
 
 		// -- Layer 2: Connection lines -------------------------------------------
-		if (!settings.hideLink) {
-			this.drawConnections(ctx, graph, states, isVisible, colors.connectionStart, colors.connectionEnd);
+		const lineStyle = settings.lineToParentStyle ?? 'translucent';
+		if (lineStyle !== 'hidden') {
+			this.drawConnections(
+				ctx, graph, states, isVisible, colors.connectionStart, lineStyle,
+				settings.hideSingleParentNodes ?? false, settings.hideMultiParentNodes ?? false,
+				relevantSet, fadeOtherNodes
+			);
 		}
 
 		// -- Layer 3: Nodes + Labels ---------------------------------------------
-		this.drawNodes(ctx, graph, states, transform, isVisible, theme, maxDepth, colors.label, settings.hideLoneStars);
+		this.drawNodes(
+			ctx, graph, states, transform, isVisible, theme, maxDepth, colors.label,
+			settings.hideLoneNodes, settings.hideSingleParentNodes ?? false, settings.hideMultiParentNodes ?? false,
+			relevantSet, fadeOtherNodes
+		);
 
 		ctx.restore();
 	}
@@ -286,62 +296,172 @@ export class CanvasRenderer {
 		orbitColor: string,
 		theme: OrbitThemeType,
 		maxDepth: number,
+		traceStyle: OrbitTraceStyle = 'translucent',
+		dualParentOvalOrbit: boolean = true,
+		orbitDirection: OrbitDirectionType = 'counterclockwise',
+		hideSingleParentNodes: boolean = false,
+		hideMultiParentNodes: boolean = false,
+		relevantSet: Set<string> | null = null,
+		fadeOtherNodes: boolean = true,
 	): void {
 		ctx.lineWidth = 1;
 
 		for (const [nodeId, state] of states) {
 			if (state.radius <= 0) continue; // root nodes have no orbit path
 
+			if (fadeOtherNodes && relevantSet && !relevantSet.has(nodeId)) {
+				continue; // Hide orbit trace for unrelated nodes when focused
+			}
+
 			const node = graph.nodes.get(nodeId);
-			if (!node) continue;
+			if (!node || node.parents.length === 0) continue;
+			if (hideSingleParentNodes && node.parents.length === 1) continue;
+			if (hideMultiParentNodes && node.parents.length > 1) continue;
 
-			// Determine center of orbit.
-			let cx: number;
-			let cy: number;
+			let cx = 0;
+			let cy = 0;
+			let isEllipse = false;
+			let semiMajor = 0;
+			let semiMinor = 0;
+			let rotation = 0;
+			let orbitRadius = 0;
 
-			if (node.parents.length >= 2) {
+			if (node.parents.length === 1) {
+				const ps = states.get(node.parents[0]!);
+				if (!ps) continue;
+				cx = ps.x;
+				cy = ps.y;
+				orbitRadius = state.radius;
+			} else if (node.parents.length === 2) {
+				const ps1 = states.get(node.parents[0]!);
+				const ps2 = states.get(node.parents[1]!);
+				if (!ps1 || !ps2) {
+					const ps = ps1 || ps2;
+					if (!ps) continue;
+					cx = ps.x;
+					cy = ps.y;
+					orbitRadius = state.radius;
+				} else {
+					cx = (ps1.x + ps2.x) / 2;
+					cy = (ps1.y + ps2.y) / 2;
+					const dx = ps2.x - ps1.x;
+					const dy = ps2.y - ps1.y;
+					const d = Math.sqrt(dx * dx + dy * dy);
+					const useOval = dualParentOvalOrbit;
+					if (useOval) {
+						rotation = Math.atan2(dy, dx);
+						semiMajor = d / 2 + state.radius;
+						semiMinor = semiMajor * 0.6;
+						isEllipse = true;
+						orbitRadius = semiMajor;
+					} else {
+						isEllipse = false;
+						orbitRadius = d / 2 + state.radius;
+					}
+				}
+			} else {
+				// parents.length >= 3
 				let sumX = 0;
 				let sumY = 0;
-				let count = 0;
+				const validParents: OrbitalState[] = [];
 				for (const pid of node.parents) {
 					const ps = states.get(pid);
-					if (ps) { sumX += ps.x; sumY += ps.y; count++; }
+					if (ps) {
+						sumX += ps.x;
+						sumY += ps.y;
+						validParents.push(ps);
+					}
 				}
-				cx = count > 0 ? sumX / count : 0;
-				cy = count > 0 ? sumY / count : 0;
-			} else if (node.parents.length === 1) {
-				const ps = states.get(node.parents[0]!);
-				cx = ps?.x ?? 0;
-				cy = ps?.y ?? 0;
-			} else {
+				if (validParents.length === 0) continue;
+				cx = sumX / validParents.length;
+				cy = sumY / validParents.length;
+
+				let maxDist = 0;
+				for (const ps of validParents) {
+					const dist = Math.hypot(ps.x - cx, ps.y - cy);
+					if (dist > maxDist) maxDist = dist;
+				}
+				orbitRadius = maxDist + state.radius;
+			}
+
+			if (!isVisible(cx, cy, orbitRadius)) continue;
+
+			if (traceStyle === 'translucent') {
+				// Parametric Fading Trail on Orbit
+				const N = 30; // Number of trail segments
+				const totalSpan = Math.PI * 1; // Tail arc length (180 degrees)
+				const deltaTheta = totalSpan / N;
+
+				// Tail direction: opposite of movement (if moving counterclockwise, tail is at +theta)
+				let isCounterClockwise = false;
+				if (state.omega !== 0) {
+					isCounterClockwise = state.omega < 0;
+				} else if (orbitDirection === 'counterclockwise') {
+					isCounterClockwise = true;
+				} else if (orbitDirection === 'clockwise') {
+					isCounterClockwise = false;
+				} else {
+					// 'cross' path
+					isCounterClockwise = node.depth % 2 !== 0;
+				}
+				const tailDir = isCounterClockwise ? 1 : -1;
+
+				const cosRot = Math.cos(rotation);
+				const sinRot = Math.sin(rotation);
+
+				ctx.lineWidth = 1.5;
+
+				let prevX = 0;
+				let prevY = 0;
+
+				for (let k = 0; k <= N; k++) {
+					const theta_k = state.theta + k * deltaTheta * tailDir;
+					let x = 0;
+					let y = 0;
+
+					if (isEllipse) {
+						const lx = semiMajor * Math.cos(theta_k);
+						const ly = semiMinor * Math.sin(theta_k);
+						x = cx + lx * cosRot - ly * sinRot;
+						y = cy + lx * sinRot + ly * cosRot;
+					} else {
+						x = cx + orbitRadius * Math.cos(theta_k);
+						y = cy + orbitRadius * Math.sin(theta_k);
+					}
+
+					if (k > 0) {
+						// Alpha decays from 0.5 at k=0 (current node position) down to 0.0 at tail
+						const ratio = 1 - k / N;
+						const alpha = 0.5 * Math.pow(ratio, 1.2);
+						ctx.strokeStyle = getRgbaColor(orbitColor, alpha);
+						ctx.beginPath();
+						ctx.moveTo(prevX, prevY);
+						ctx.lineTo(x, y);
+						ctx.stroke();
+					}
+
+					prevX = x;
+					prevY = y;
+				}
+
+				ctx.lineWidth = 1;
 				continue;
 			}
 
-			if (!isVisible(cx, cy, state.radius)) continue;
-
-			// Get the unified theme orbit color and derive stops
-			const rgbaHead = getRgbaColor(orbitColor, 0.30);
-			const rgbaTail = getRgbaColor(orbitColor, 0.0);
-
-			// Create conic gradient around orbit center (cx, cy)
-			// starting at the node's current angular position (state.theta)
-			const grad = ctx.createConicGradient(state.theta, cx, cy);
-
-			// Align the fading tail based on the rotation direction (clockwise vs counterclockwise)
-			const isClockwise = state.omega > 0;
-			if (isClockwise) {
-				// Clockwise rotation -> opposite behavior: direction of motion is fully transparent, opposite direction is 30% opaque
-				grad.addColorStop(0, rgbaTail);
-				grad.addColorStop(1, rgbaHead);
+			if (traceStyle === 'solid') {
+				ctx.lineWidth = 1.5;
+				ctx.strokeStyle = getRgbaColor(orbitColor, 0.8);
 			} else {
-				// Counterclockwise rotation -> opposite behavior: direction of motion is fully transparent, opposite direction is 30% opaque
-				grad.addColorStop(0, rgbaHead);
-				grad.addColorStop(1, rgbaTail);
+				ctx.lineWidth = 1;
+				ctx.strokeStyle = getRgbaColor(orbitColor, 0.35);
 			}
 
-			ctx.strokeStyle = grad;
 			ctx.beginPath();
-			ctx.arc(cx, cy, state.radius, 0, Math.PI * 2);
+			if (isEllipse) {
+				ctx.ellipse(cx, cy, semiMajor, semiMinor, rotation, 0, Math.PI * 2);
+			} else {
+				ctx.arc(cx, cy, orbitRadius, 0, Math.PI * 2);
+			}
 			ctx.stroke();
 		}
 
@@ -353,8 +473,12 @@ export class CanvasRenderer {
 		graph: ParsedGraph,
 		states: ReadonlyMap<string, OrbitalState>,
 		isVisible: (x: number, y: number, r: number) => boolean,
-		startColor: string,
-		endColor: string,
+		baseColor: string,
+		lineStyle: LineToParentStyle,
+		hideSingleParentNodes: boolean = false,
+		hideMultiParentNodes: boolean = false,
+		relevantSet: Set<string> | null = null,
+		fadeOtherNodes: boolean = true,
 	): void {
 		ctx.lineWidth = 1;
 
@@ -362,9 +486,16 @@ export class CanvasRenderer {
 			const node = graph.nodes.get(nodeId);
 			if (!node) continue;
 
+			if (hideSingleParentNodes && node.parents.length === 1) continue;
+			if (hideMultiParentNodes && node.parents.length > 1) continue;
+
 			for (const parentId of node.parents) {
 				const parentState = states.get(parentId);
 				if (!parentState) continue;
+
+				const parentNode = graph.nodes.get(parentId);
+				if (hideSingleParentNodes && parentNode && parentNode.parents.length === 1) continue;
+				if (hideMultiParentNodes && parentNode && parentNode.parents.length > 1) continue;
 
 				// Only draw if either end is visible.
 				if (
@@ -374,12 +505,28 @@ export class CanvasRenderer {
 					continue;
 				}
 
+				if (fadeOtherNodes && relevantSet && (!relevantSet.has(nodeId) || !relevantSet.has(parentId))) {
+					continue; // Hide connection line for unrelated nodes when focused
+				}
+
 				const grad = ctx.createLinearGradient(
 					parentState.x, parentState.y,
 					state.x, state.y,
 				);
-				grad.addColorStop(0, startColor);
-				grad.addColorStop(1, endColor);
+
+				if (lineStyle === 'solid') {
+					const solidColor = getRgbaColor(baseColor, 0.8);
+					grad.addColorStop(0, solidColor);
+					grad.addColorStop(1, solidColor);
+				} else {
+					// Translucent: Parent node (40%) -> Middle of line (20%) -> Child node (40%)
+					const edgeColor = getRgbaColor(baseColor, 0.4);
+					const midColor = getRgbaColor(baseColor, 0.2);
+					grad.addColorStop(0, edgeColor);
+					grad.addColorStop(0.5, midColor);
+					grad.addColorStop(1, edgeColor);
+				}
+
 				ctx.strokeStyle = grad;
 
 				ctx.beginPath();
@@ -399,10 +546,20 @@ export class CanvasRenderer {
 		theme: OrbitThemeType,
 		maxDepth: number,
 		labelColor: string,
-		hideLoneStars: boolean,
+		hideLoneNodes: boolean,
+		hideSingleParentNodes: boolean = false,
+		hideMultiParentNodes: boolean = false,
+		relevantSet: Set<string> | null = null,
+		fadeOtherNodes: boolean = true,
 	): void {
 		const invScale = 1 / transform.scale;
 		const fontSize = Math.max(8, Math.min(LABEL_FONT_BASE * invScale, 24));
+
+		// Calculate zoom-based text alpha multiplier (smooth fade out when zooming out, fade in when zooming in)
+		const FADE_IN_SCALE = 0.45;
+		const FADE_OUT_SCALE = 0.20;
+		const rawT = Math.max(0, Math.min(1, (transform.scale - FADE_OUT_SCALE) / (FADE_IN_SCALE - FADE_OUT_SCALE)));
+		const textZoomAlpha = rawT * rawT * (3 - 2 * rawT);
 
 		for (const [nodeId, state] of states) {
 			if (!isVisible(state.x, state.y, state.renderRadius)) continue;
@@ -410,28 +567,43 @@ export class CanvasRenderer {
 			const node = graph.nodes.get(nodeId);
 			if (!node) continue;
 
-			if (hideLoneStars && node.parents.length === 0 && node.children.length === 0) {
+			if (hideLoneNodes && node.parents.length === 0 && node.children.length === 0) {
+				continue;
+			}
+			if (hideSingleParentNodes && node.parents.length === 1) {
+				continue;
+			}
+			if (hideMultiParentNodes && node.parents.length > 1) {
 				continue;
 			}
 
+			const isRelevant = !fadeOtherNodes || !relevantSet || relevantSet.has(nodeId);
+
 			const r = state.renderRadius;
 			const systemMaxDepth = state.systemMaxDepth ?? maxDepth;
-			const color = getNodeColor(nodeId, node.depth, theme, systemMaxDepth, state.siblingIndex ?? 0);
-			const glow = getNodeGlowColor(color, theme);
+			let color = getNodeColor(nodeId, node.depth, theme, systemMaxDepth, state.siblingIndex ?? 0);
+			const baseLabelAlpha = isRelevant ? 0.75 : 0.075;
+			const finalLabelAlpha = baseLabelAlpha * textZoomAlpha;
 
-			// Outer glow.
-			const gradient = ctx.createRadialGradient(
-				state.x, state.y, r * 0.3,
-				state.x, state.y, r * 1.8,
-			);
-			gradient.addColorStop(0, color);
-			gradient.addColorStop(0.4, glow);
-			gradient.addColorStop(1, 'transparent');
+			if (isRelevant) {
+				// Outer glow (20% opacity halo for relevant nodes).
+				const glow = getNodeGlowColor(color, theme);
+				const gradient = ctx.createRadialGradient(
+					state.x, state.y, r * 0.3,
+					state.x, state.y, r * 1.8,
+				);
+				gradient.addColorStop(0, color);
+				gradient.addColorStop(0.4, glow);
+				gradient.addColorStop(1, 'transparent');
 
-			ctx.beginPath();
-			ctx.arc(state.x, state.y, r * 1.8, 0, Math.PI * 2);
-			ctx.fillStyle = gradient;
-			ctx.fill();
+				ctx.beginPath();
+				ctx.arc(state.x, state.y, r * 1.8, 0, Math.PI * 2);
+				ctx.fillStyle = gradient;
+				ctx.fill();
+			} else {
+				// Fade state: node core is 10% opacity, halo is OFF
+				color = getRgbaColor(color, 0.1);
+			}
 
 			// Solid core.
 			ctx.beginPath();
@@ -439,13 +611,59 @@ export class CanvasRenderer {
 			ctx.fillStyle = color;
 			ctx.fill();
 
-			// Label.
-			ctx.fillStyle = labelColor;
-			ctx.font = `${fontSize}px Inter, system-ui, sans-serif`;
-			ctx.textAlign = 'center';
-			ctx.textBaseline = 'top';
-			ctx.fillText(node.label, state.x, state.y + r + 4 * invScale);
+			// Label (smoothly fades with zoom level).
+			if (finalLabelAlpha > 0.001) {
+				ctx.fillStyle = getRgbaColor(labelColor, finalLabelAlpha);
+				ctx.font = `${fontSize}px Inter, system-ui, sans-serif`;
+				ctx.textAlign = 'center';
+				ctx.textBaseline = 'top';
+				ctx.fillText(node.label, state.x, state.y + r + 4 * invScale);
+			}
 		}
+	}
+
+	/**
+	 * Build a Set containing the focused node ID, all its ancestors, and all its descendants.
+	 */
+	private getRelevantNodeSet(graph: ParsedGraph, focusId: string): Set<string> {
+		const relevant = new Set<string>();
+		relevant.add(focusId);
+
+		// 1. Traverse Ancestors (Upward)
+		const queueUp = [focusId];
+		const visitedUp = new Set<string>([focusId]);
+		while (queueUp.length > 0) {
+			const currId = queueUp.shift()!;
+			const currNode = graph.nodes.get(currId);
+			if (currNode) {
+				for (const pId of currNode.parents) {
+					if (!visitedUp.has(pId)) {
+						visitedUp.add(pId);
+						relevant.add(pId);
+						queueUp.push(pId);
+					}
+				}
+			}
+		}
+
+		// 2. Traverse Descendants (Downward)
+		const queueDown = [focusId];
+		const visitedDown = new Set<string>([focusId]);
+		while (queueDown.length > 0) {
+			const currId = queueDown.shift()!;
+			const currNode = graph.nodes.get(currId);
+			if (currNode) {
+				for (const cId of currNode.children) {
+					if (!visitedDown.has(cId)) {
+						visitedDown.add(cId);
+						relevant.add(cId);
+						queueDown.push(cId);
+					}
+				}
+			}
+		}
+
+		return relevant;
 	}
 
 	// -----------------------------------------------------------------------
@@ -470,7 +688,13 @@ export class CanvasRenderer {
 			const node = graph.nodes.get(nodeId);
 			if (!node) continue;
 
-			if (settings.hideLoneStars && node.parents.length === 0 && node.children.length === 0) {
+			if (settings.hideLoneNodes && node.parents.length === 0 && node.children.length === 0) {
+				continue;
+			}
+			if (settings.hideSingleParentNodes && node.parents.length === 1) {
+				continue;
+			}
+			if (settings.hideMultiParentNodes && node.parents.length > 1) {
 				continue;
 			}
 
