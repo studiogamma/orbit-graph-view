@@ -38,12 +38,12 @@ Orbit supports **four** distinct ways to model parent-child links in your vault,
 * **Node Size Scale:** Adjust the sizing of nodes ($0.5\text{x} - 2.0\text{x}$).
 * **Galactic Rotation**: Rotate top-level nodes around their centroid so the entire graph resembles one galaxy.
 * **Many Seamless Toggles**:
- * Orbit traces
- * parent-child lines
- * lone nodes
- * single-parent nodes
- * multi-parent nodes
- * oval/circle orbit for dual-parent nodes
+  * Orbit traces
+  * parent-child lines
+  * lone nodes
+  * single-parent nodes
+  * multi-parent nodes
+  * oval/circle orbit for dual-parent nodes
 
 ---
 
