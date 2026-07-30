@@ -7,11 +7,11 @@
 // click-to-open, and debounced vault re-parsing.
 // ============================================================================
 
-import { ItemView, WorkspaceLeaf, TFile, debounce, setIcon } from 'obsidian';
+import { ItemView, WorkspaceLeaf, debounce, setIcon } from 'obsidian';
 import { parseVault } from './parser';
 import { PhysicsEngine } from './physics';
 import { CanvasRenderer } from './renderer';
-import { ParsedGraph, ViewTransform, OrbitPluginSettings, DEFAULT_SETTINGS, SiblingSortMode, OrbitThemeType, OrbitDirectionType, OrbitParentSourceType, LineToParentStyle, OrbitTraceStyle } from './types';
+import { ParsedGraph, ViewTransform, OrbitPluginSettings, DEFAULT_SETTINGS, SiblingSortMode, OrbitThemeType, OrbitParentSourceType, LineToParentStyle, OrbitTraceStyle } from './types';
 
 export const VIEW_TYPE_ORBIT = 'orbit-graph-view';
 
@@ -153,7 +153,7 @@ export class OrbitGraphView extends ItemView {
 	async onClose(): Promise<void> {
 		// Stop animation.
 		if (this.animFrameId !== null) {
-			cancelAnimationFrame(this.animFrameId);
+			window.cancelAnimationFrame(this.animFrameId);
 			this.animFrameId = null;
 		}
 
@@ -246,20 +246,25 @@ export class OrbitGraphView extends ItemView {
 		if (this.emptyStateEl || !this.containerDiv) return;
 		this.emptyStateEl = this.containerDiv.createDiv({ cls: 'orbit-graph-empty' });
 
-		let instruction = '';
+		this.emptyStateEl.createDiv({ text: 'No orbital data found.' });
+		const p = this.emptyStateEl.createEl('p');
+
 		const source = this.settings.parentSource || 'frontmatter';
 		if (source === 'frontmatter') {
-			instruction = 'Add <code>gravity_parent</code> to your note frontmatter to get started.';
+			p.appendText('Add ');
+			p.createEl('code', { text: 'gravity_parent' });
+			p.appendText(' to your note frontmatter to get started.');
 		} else if (source === 'tag') {
-			instruction = 'Add tags (e.g. <code>#parent-note-name</code>) to your notes to get started.';
+			p.appendText('Add tags (e.g. ');
+			p.createEl('code', { text: '#parent-note-name' });
+			p.appendText(') to your notes to get started.');
 		} else if (source === 'outlink') {
-			instruction = 'Add outlinks (e.g. <code>[[Parent Note]]</code>) to your notes to get started.';
+			p.appendText('Add outlinks (e.g. ');
+			p.createEl('code', { text: '[[Parent Note]]' });
+			p.appendText(') to your notes to get started.');
 		} else if (source === 'backlink') {
-			instruction = 'Add backlinks from other notes to get started.';
+			p.appendText('Add backlinks from other notes to get started.');
 		}
-
-		this.emptyStateEl.innerHTML =
-			'No orbital data found.<br>' + instruction;
 	}
 
 	private hideEmptyState(): void {
@@ -300,7 +305,7 @@ export class OrbitGraphView extends ItemView {
 			this.renderer.draw(this.graph, this.physics.getStates(), this.transform, this.settings, this.focusedNodeId);
 		}
 
-		this.animFrameId = requestAnimationFrame(this.tick);
+		this.animFrameId = window.requestAnimationFrame(this.tick);
 	};
 
 	// -----------------------------------------------------------------------
@@ -406,8 +411,7 @@ export class OrbitGraphView extends ItemView {
 				return;
 			}
 			// Open the file in the most recent leaf (avoid replacing this view).
-			const leaf = this.app.workspace.getLeaf('tab');
-			this.app.workspace.openLinkText(hitId, '', false, { active: true });
+			void this.app.workspace.openLinkText(hitId, '', false, { active: true });
 		} else {
 			// Left clicked empty space: clear node focus
 			this.clearFocus();
@@ -442,7 +446,7 @@ export class OrbitGraphView extends ItemView {
 		}
 	}
 
-	private async onKeyDown(e: KeyboardEvent): Promise<void> {
+	private onKeyDown(e: KeyboardEvent): void {
 		if (e.code !== 'Space' && e.key !== ' ') return;
 
 		// Only trigger when this OrbitGraphView is the active view in Obsidian
@@ -466,7 +470,7 @@ export class OrbitGraphView extends ItemView {
 
 		this.physics.updatePhysicsParameters(this.settings);
 		if (this.saveSettingsCallback) {
-			await this.saveSettingsCallback(this.settings);
+			void this.saveSettingsCallback(this.settings);
 		}
 		this.renderSettingsContent();
 	}
@@ -749,25 +753,27 @@ export class OrbitGraphView extends ItemView {
 				const resetBtn = actionEl.createEl('button', { cls: 'orbit-graph-settings-action-btn' });
 				setIcon(resetBtn, 'refresh-cw');
 				resetBtn.setAttribute('title', 'Reset display options to default');
-				resetBtn.addEventListener('click', async (e) => {
+				resetBtn.addEventListener('click', (e) => {
 					e.stopPropagation();
-					this.settings.keplerBaseOmega = DEFAULT_SETTINGS.keplerBaseOmega;
-					this.settings.orbitDirection = DEFAULT_SETTINGS.orbitDirection;
-					this.settings.dualParentOvalOrbit = DEFAULT_SETTINGS.dualParentOvalOrbit;
-					this.settings.galacticRotation = DEFAULT_SETTINGS.galacticRotation;
-					this.settings.gravity = DEFAULT_SETTINGS.gravity ?? 1.0;
-					this.settings.orbitRadiusScale = (DEFAULT_SETTINGS.gravity ?? 1.0) + 0.5;
-					this.settings.galaxySize = (DEFAULT_SETTINGS.gravity ?? 1.0) + 0.5;
-					this.settings.nodeSizeScale = DEFAULT_SETTINGS.nodeSizeScale;
-					this.settings.orbitTraceStyle = DEFAULT_SETTINGS.orbitTraceStyle;
-					this.settings.lineToParentStyle = DEFAULT_SETTINGS.lineToParentStyle;
-					this.lastActiveSpeed = DEFAULT_SETTINGS.keplerBaseOmega;
+					void (async () => {
+						this.settings.keplerBaseOmega = DEFAULT_SETTINGS.keplerBaseOmega;
+						this.settings.orbitDirection = DEFAULT_SETTINGS.orbitDirection;
+						this.settings.dualParentOvalOrbit = DEFAULT_SETTINGS.dualParentOvalOrbit;
+						this.settings.galacticRotation = DEFAULT_SETTINGS.galacticRotation;
+						this.settings.gravity = DEFAULT_SETTINGS.gravity ?? 1.0;
+						this.settings.orbitRadiusScale = (DEFAULT_SETTINGS.gravity ?? 1.0) + 0.5;
+						this.settings.galaxySize = (DEFAULT_SETTINGS.gravity ?? 1.0) + 0.5;
+						this.settings.nodeSizeScale = DEFAULT_SETTINGS.nodeSizeScale;
+						this.settings.orbitTraceStyle = DEFAULT_SETTINGS.orbitTraceStyle;
+						this.settings.lineToParentStyle = DEFAULT_SETTINGS.lineToParentStyle;
+						this.lastActiveSpeed = DEFAULT_SETTINGS.keplerBaseOmega;
 
-					this.physics.updatePhysicsParameters(this.settings);
-					if (this.saveSettingsCallback) {
-						await this.saveSettingsCallback(this.settings);
-					}
-					this.renderSettingsContent();
+						this.physics.updatePhysicsParameters(this.settings);
+						if (this.saveSettingsCallback) {
+							await this.saveSettingsCallback(this.settings);
+						}
+						this.renderSettingsContent();
+					})();
 				});
 			}
 		);
@@ -868,7 +874,7 @@ export class OrbitGraphView extends ItemView {
 		}
 
 		const updateHighlight = () => {
-			const items = Array.from(dropdownEl.querySelectorAll('.orbit-autocomplete-item')) as HTMLElement[];
+			const items = Array.from(dropdownEl.querySelectorAll<HTMLElement>('.orbit-autocomplete-item'));
 			items.forEach((itemEl, idx) => {
 				if (idx === highlightedIndex) {
 					itemEl.classList.add('is-highlighted');
@@ -1000,7 +1006,7 @@ export class OrbitGraphView extends ItemView {
 		});
 
 		input.addEventListener('blur', () => {
-			setTimeout(() => {
+			window.setTimeout(() => {
 				dropdownEl.classList.add('is-hidden');
 				highlightedIndex = -1;
 			}, 150);
@@ -1040,8 +1046,8 @@ export class OrbitGraphView extends ItemView {
 
 		select.value = currentValue;
 
-		select.addEventListener('change', async () => {
-			await onChange(select.value);
+		select.addEventListener('change', () => {
+			void onChange(select.value);
 		});
 	}
 
@@ -1078,10 +1084,10 @@ export class OrbitGraphView extends ItemView {
 			valueEl.setText(slider.value);
 		});
 
-		slider.addEventListener('change', async () => {
+		slider.addEventListener('change', () => {
 			const val = parseFloat(slider.value);
 			if (!isNaN(val)) {
-				await onChange(val);
+				void onChange(val);
 			}
 		});
 	}
@@ -1194,14 +1200,14 @@ export class OrbitGraphView extends ItemView {
 		const label = container.createEl('label', { cls: 'orbit-setting-checkbox-label' });
 		label.setAttribute('for', checkbox.id);
 
-		const nameSpan = label.createSpan({ cls: 'orbit-setting-item-name', text: ' ' + name });
+		label.createSpan({ cls: 'orbit-setting-item-name', text: ' ' + name });
 		if (desc) {
 			label.createEl('br');
 			label.createSpan({ cls: 'orbit-setting-item-desc', text: desc });
 		}
 
-		checkbox.addEventListener('change', async () => {
-			await onChange(checkbox.checked);
+		checkbox.addEventListener('change', () => {
+			void onChange(checkbox.checked);
 		});
 	}
 }

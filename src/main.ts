@@ -4,7 +4,7 @@
 
 import { Plugin, WorkspaceLeaf, PluginSettingTab, Setting, App } from 'obsidian';
 import { OrbitGraphView, VIEW_TYPE_ORBIT } from './view';
-import { OrbitPluginSettings, DEFAULT_SETTINGS, SiblingSortMode, OrbitThemeType, OrbitDirectionType, OrbitParentSourceType, LineToParentStyle, OrbitTraceStyle } from './types';
+import { OrbitPluginSettings, DEFAULT_SETTINGS, SiblingSortMode, OrbitThemeType, OrbitParentSourceType } from './types';
 
 export default class OrbitPlugin extends Plugin {
 	settings: OrbitPluginSettings = { ...DEFAULT_SETTINGS };
@@ -25,15 +25,15 @@ export default class OrbitPlugin extends Plugin {
 
 		// Ribbon icon (planet emoji mapped to Lucide "orbit" icon).
 		this.addRibbonIcon('orbit', 'Open Orbit Graph View', () => {
-			this.activateView();
+			void this.activateView();
 		});
 
 		// Command palette entry.
 		this.addCommand({
-			id: 'open-orbit-graph-view',
-			name: 'Open Orbit Graph View',
+			id: 'open-graph-view',
+			name: 'Open graph view',
 			callback: () => {
-				this.activateView();
+				void this.activateView();
 			},
 		});
 	}
@@ -65,7 +65,7 @@ export default class OrbitPlugin extends Plugin {
 		}
 
 		if (leaf) {
-			workspace.revealLeaf(leaf);
+			void workspace.revealLeaf(leaf);
 		}
 	}
 
@@ -74,35 +74,35 @@ export default class OrbitPlugin extends Plugin {
 	// -----------------------------------------------------------------------
 
 	async loadSettings(): Promise<void> {
-		const data = await this.loadData();
+		const data = (await this.loadData()) as Record<string, unknown> | null;
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
 
-		// Synchronization/Migration for Gravity setting
+		// Synchronization/Migration for Orbit Scale setting
 		if (data) {
-			const grav = (data as { gravity?: number }).gravity ?? 1.0;
+			const grav = typeof data.gravity === 'number' ? data.gravity : 1.0;
 			this.settings.gravity = grav;
 			this.settings.orbitRadiusScale = grav + 0.5;
 			this.settings.galaxySize = grav + 0.5;
 		}
 
 		// Migration from legacy hideOtherNodes setting
-		if (data && (data as { hideOtherNodes?: boolean }).hideOtherNodes !== undefined && data.fadeOtherNodes === undefined) {
-			this.settings.fadeOtherNodes = (data as { hideOtherNodes?: boolean }).hideOtherNodes!;
+		if (data && typeof data.hideOtherNodes === 'boolean' && data.fadeOtherNodes === undefined) {
+			this.settings.fadeOtherNodes = data.hideOtherNodes;
 		}
 
 		// Migration from legacy hideLoneStars setting
-		if (data && (data as { hideLoneStars?: boolean }).hideLoneStars !== undefined && data.hideLoneNodes === undefined) {
-			this.settings.hideLoneNodes = (data as { hideLoneStars?: boolean }).hideLoneStars!;
+		if (data && typeof data.hideLoneStars === 'boolean' && data.hideLoneNodes === undefined) {
+			this.settings.hideLoneNodes = data.hideLoneStars;
 		}
 
 		// Migration from legacy hideLink boolean setting
-		if (data && (data as { hideLink?: boolean }).hideLink !== undefined && data.lineToParentStyle === undefined) {
-			this.settings.lineToParentStyle = (data as { hideLink?: boolean }).hideLink ? 'hidden' : 'translucent';
+		if (data && typeof data.hideLink === 'boolean' && data.lineToParentStyle === undefined) {
+			this.settings.lineToParentStyle = data.hideLink ? 'hidden' : 'translucent';
 		}
 
 		// Migration from legacy hideOrbitTrace boolean setting
-		if (data && (data as { hideOrbitTrace?: boolean }).hideOrbitTrace !== undefined && data.orbitTraceStyle === undefined) {
-			this.settings.orbitTraceStyle = (data as { hideOrbitTrace?: boolean }).hideOrbitTrace ? 'hidden' : 'translucent';
+		if (data && typeof data.hideOrbitTrace === 'boolean' && data.orbitTraceStyle === undefined) {
+			this.settings.orbitTraceStyle = data.hideOrbitTrace ? 'hidden' : 'translucent';
 		}
 
 		// Convert legacy string values ('hide' -> 'hidden', 'transparent' -> 'translucent')
@@ -133,11 +133,15 @@ class OrbitSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
+	getSettingDefinitions(): any[] {
+		return [];
+	}
+
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		containerEl.createEl('h2', { text: 'Orbit Graph Settings' });
+		new Setting(containerEl).setName('Orbit Graph Settings').setHeading();
 		containerEl.createEl('p', {
 			text: 'You can open the Orbit Graph View using the orbit icon in the left sidebar.',
 			cls: 'setting-item-description'

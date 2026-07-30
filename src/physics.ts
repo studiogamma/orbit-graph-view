@@ -2,18 +2,13 @@
 // Orbit — Physics & Layout Engine (stub — Phase 2)
 // ============================================================================
 
-import { GraphNode, OrbitalState, SiblingSortMode, ParsedGraph, OrbitPluginSettings, DEFAULT_SETTINGS } from './types';
+import { GraphNode, OrbitalState, ParsedGraph, OrbitPluginSettings, DEFAULT_SETTINGS } from './types';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const BASE_RADIUS = 80;
-const MASS_SCALE = 5;
-const SIBLING_SPACING = 40;
-const BASE_OMEGA = 2;
 const ROOT_PADDING = 200;
-const NODE_RENDER_SCALE = 3;
 
 const BASE_NODE_SCALE = 30;
 const BASE_ORBIT_SCALE = 240;

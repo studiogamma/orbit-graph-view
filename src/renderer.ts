@@ -10,7 +10,7 @@
 // - Inverse-zoom text scaling for readable labels at any zoom level
 // ============================================================================
 
-import { GraphNode, OrbitalState, ViewTransform, ParsedGraph, OrbitPluginSettings, OrbitThemeType, OrbitTraceStyle, OrbitDirectionType, LineToParentStyle } from './types';
+import { OrbitalState, ViewTransform, ParsedGraph, OrbitPluginSettings, OrbitThemeType, OrbitTraceStyle, OrbitDirectionType, LineToParentStyle } from './types';
 
 // ---------------------------------------------------------------------------
 // Color Themes & Palettes
@@ -81,7 +81,7 @@ function getNodeColor(
 		if (isType4) {
 			const planetColors = [
 				'#0051C2',  // 1st Node (Earth blue)
-				'#D39C7E',  // 2nd Node (Jupiter tan)
+				'#BE7D65',  // 2nd Node
 				'#C5AB6E',  // 3rd Node (Saturn sandy yellow)
 				'#5BCEE4',  // 4th Node (Neptune deep blue)
 			];
@@ -95,35 +95,37 @@ function getNodeColor(
 	// -- Standard depth colors fallback for Celestial Theme --
 	const type1Colors = ['#FF969D', '#FF6880', '#FF5350'];
 	const type2Colors = ['#D8FFFF', '#BDFFFF', '#93FFFF'];
-	const type3Colors = ['#FFC84B', '#FFE267', '#FFB86F'];
+	const type3Colors = ['#FFBD4B', '#FFAD4A', '#FFAA27'];
+	const type4Colors = ['#0051C2', '#BE7D65', '#C5AB6E', '#5BCEE4'];
 
 	const getType1Color = () => getRandomPaletteColor(type1Colors, nodeId, siblingIndex);
 	const getType2Color = () => getRandomPaletteColor(type2Colors, nodeId, siblingIndex);
 	const getType3Color = () => getRandomPaletteColor(type3Colors, nodeId, siblingIndex);
+	const getType4Color = () => getRandomPaletteColor(type4Colors, nodeId, siblingIndex);
 
 	if (maxDepth === 0) {
 		return getType3Color(); // Type 3-A
 	}
 	if (maxDepth === 1) {
 		if (depth === 0) return getType3Color(); // Type 3
-		return '#0051C2'; // Type 4
+		return getType4Color(); // Type 4
 	}
 	if (maxDepth === 2) {
 		if (depth === 0) return getType3Color(); // Type 3
-		if (depth === 1) return '#0051C2'; // Type 4
+		if (depth === 1) return getType4Color(); // Type 4
 		return '#BFBFBF'; // Type 5 (Grey)
 	}
 	if (maxDepth === 3) {
 		if (depth === 0) return getType2Color(); // Type 2 (Skyblue)
 		if (depth === 1) return getType3Color(); // Type 3
-		if (depth === 2) return '#0051C2'; // Type 4
+		if (depth === 2) return getType4Color(); // Type 4
 		return '#BFBFBF'; // Type 5 (Grey)
 	}
 	// maxDepth >= 4
 	if (depth === 0) return getType1Color(); // Type 1 (Red)
 	if (depth === 1) return getType2Color(); // Type 2 (Skyblue)
 	if (depth === 2) return getType3Color(); // Type 3
-	if (depth === 3) return '#0051C2'; // Type 4
+	if (depth === 3) return getType4Color(); // Type 4
 	return '#BFBFBF'; // Type 5 (Grey)
 }
 
@@ -149,7 +151,7 @@ function getNodeGlowColor(baseColor: string, _theme: OrbitThemeType): string {
  */
 function getRgbaColor(baseColor: string, alpha: number): string {
 	if (baseColor.startsWith('rgba')) {
-		return baseColor.replace(/[\d\.]+\)$/, `${alpha})`);
+		return baseColor.replace(/[\d.]+\)$/, `${alpha})`);
 	}
 	if (baseColor.startsWith('#')) {
 		const r = parseInt(baseColor.slice(1, 3), 16);
