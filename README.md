@@ -2,9 +2,9 @@
 
 **Orbit** is an Obsidian plugin that visualizes your vault as an organized orbital cosmos, modeling your notes as orbiting nodes.
 
+## Demo Video
 
-https://github.com/user-attachments/assets/e0af8fb8-a452-4c5b-987f-e62942bc2b92
-
+Uploading Orbit README 0730.mp4…
 
 ---
 
