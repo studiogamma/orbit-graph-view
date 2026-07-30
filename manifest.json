@@ -1,7 +1,7 @@
 {
 	"id": "orbit-graph-view",
 	"name": "Orbit",
-	"version": "1.0.5",
+	"version": "1.0.6",
 	"minAppVersion": "1.7.2",
 	"description": "Visualize your notes as an orbital cosmos. Nodes orbit around their parent nodes based on frontmatter, tags, outlinks, or backlinks.",
 	"author": "studiogamma",

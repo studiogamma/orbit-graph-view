@@ -141,7 +141,6 @@ class OrbitSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		new Setting(containerEl).setName('General').setHeading();
 		containerEl.createEl('p', {
 			text: 'You can open the Orbit Graph View using the orbit icon in the left sidebar.',
 			cls: 'setting-item-description'
