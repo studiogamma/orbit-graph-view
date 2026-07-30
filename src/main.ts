@@ -2,7 +2,7 @@
 // Orbit — Plugin Entry Point
 // ============================================================================
 
-import { Plugin, WorkspaceLeaf, PluginSettingTab, Setting, App } from 'obsidian';
+import { Plugin, WorkspaceLeaf, PluginSettingTab, Setting, App, SettingDefinitionItem } from 'obsidian';
 import { OrbitGraphView, VIEW_TYPE_ORBIT } from './view';
 import { OrbitPluginSettings, DEFAULT_SETTINGS, SiblingSortMode, OrbitThemeType, OrbitParentSourceType } from './types';
 
@@ -133,7 +133,7 @@ class OrbitSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
-	getSettingDefinitions(): any[] {
+	getSettingDefinitions(): SettingDefinitionItem[] {
 		return [];
 	}
 
@@ -141,7 +141,7 @@ class OrbitSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		new Setting(containerEl).setName('Orbit Graph Settings').setHeading();
+		new Setting(containerEl).setName('General').setHeading();
 		containerEl.createEl('p', {
 			text: 'You can open the Orbit Graph View using the orbit icon in the left sidebar.',
 			cls: 'setting-item-description'
